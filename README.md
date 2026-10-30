@@ -115,6 +115,11 @@ stdin, `@path` reads that file (UTF-8, from the working folder), `@@text` is the
 written. It is read before `run` and before the schema (a schema checks what was read); a missing file, `-` with
 nothing piped in, or stdin asked twice is a usage error. The help says it: `--body <text|-|@file>`.
 
+An unknown option or command word close to a known one gets a "Did you mean" in its usage error (`Unknown option
+'--colr'. Did you mean --color?`, `unknown command nte. Did you mean note?`): within two edits, every one as close
+listed, or the one word a prefix starts. Nothing runs on a guess. The helpers are in `suggest`: `editDistance`,
+`suggestions`, `didYouMean`.
+
 Rules between options (one needs or excludes another) stay in `run`, checked by hand and thrown as `usageError`, so
 they print like every other usage error (exit 2, "Run … --help"):
 

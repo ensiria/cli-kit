@@ -37,6 +37,7 @@ import { ScriptError, usageError } from "./script.ts";
 import type { ScriptContext } from "./script.types.ts";
 import { supportsColor } from "./style.ts";
 import type { Tone } from "./style.types.ts";
+import { didYouMean } from "./suggest.ts";
 import { readValues } from "./valueFrom.ts";
 
 /** The options every script accepts. */
@@ -188,6 +189,25 @@ const loggerFor = (io: ScriptIo, values: ParsedArgs["values"]): Logger => {
   });
 };
 
+/**
+ * What a command line that does not parse says: the parser's message, and for an unknown option the known ones it may
+ * have meant (`Unknown option '--colr'. Did you mean --color?`).
+ *
+ * @param error - What the parser threw.
+ * @param options - The options the command line accepts.
+ */
+export const parseProblem = (error: unknown, options: Readonly<Record<string, ScriptOption>>): string => {
+  const message = messageOf(error);
+  const typed = /^Unknown option '([^']+)'/.exec(message)?.[1];
+  if (typed === undefined) return message;
+  const known = Object.entries(options).flatMap(([name, option]) =>
+    option.short ? [`--${name}`, `-${option.short}`] : [`--${name}`]
+  );
+  const suggestion = didYouMean(typed, known);
+  // with a suggestion, it replaces the parser's tip about positionals that start with a dash
+  return suggestion === "" ? message : `Unknown option '${typed}'.${suggestion}`;
+};
+
 /** A command line's problem as the kit reports it: a usage error, with the same message. */
 const asUsageError = (error: unknown): unknown =>
   error instanceof ArgumentError ? usageError(error.message) : error;
@@ -325,7 +345,9 @@ export const runTarget = async <
     // a raw positional's part, untouched, after the parsed ones
     parsed = { ...own, positionals: [...own.positionals, ...tail] };
   } catch (error) {
-    return finish(reportFailure(usageError(messageOf(error)), plainLogger(io), target.command));
+    return finish(
+      reportFailure(usageError(parseProblem(error, target.allOptions)), plainLogger(io), target.command)
+    );
   }
   const color = !flag(parsed.values["no-color"]) && supportsColor(io.stdout, io.env);
   const information = informationOnly(target, io, parsed.values, color);

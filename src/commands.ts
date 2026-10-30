@@ -13,15 +13,7 @@
  * @module
  */
 
-import {
-  checkOptions,
-  checkPositionals,
-  flag,
-  mergeOptions,
-  messageOf,
-  parseCommandLine,
-  takesValue
-} from "./args.ts";
+import { checkOptions, checkPositionals, flag, mergeOptions, parseCommandLine, takesValue } from "./args.ts";
 import type {
   CommandDefinition,
   CommandNode,
@@ -41,10 +33,11 @@ import { formatHelp, formatHelpMarkdown } from "./help.ts";
 import type { HelpSource, ScriptPositional } from "./help.types.ts";
 import { processIo } from "./io.ts";
 import type { ScriptIo } from "./io.types.ts";
-import { kitOptions, plainLogger, type RunTarget, reportFailure, runTarget } from "./runner.ts";
+import { kitOptions, parseProblem, plainLogger, type RunTarget, reportFailure, runTarget } from "./runner.ts";
 import { ScriptError, usageError } from "./script.ts";
 import type { RunOptions } from "./script.types.ts";
 import { supportsColor } from "./style.ts";
+import { didYouMean } from "./suggest.ts";
 
 /** The settings a definition sets itself, those it leaves out absent, so a group's fill them in. */
 const ownSettings = (definition: InheritedSettings): InheritedSettings => ({
@@ -286,10 +279,13 @@ const commandAt = (
     placed.commands.has(token) || placed.node.kind !== "group" ? token : placed.node.aliases[token];
   const next = word === undefined ? undefined : placed.commands.get(word);
   if (word === undefined || next === undefined) {
-    throw new ScriptError(`unknown command ${token}`, {
-      exitCode: EXIT.usage,
-      hint: `${placed.place.command} has: ${[...placed.commands.keys()].join(", ")}. Run ${placed.place.command} --help.`
-    });
+    throw new ScriptError(
+      `unknown command ${token}.${didYouMean(token, [...placed.commands.keys()])}`.replace(/\.$/, ""),
+      {
+        exitCode: EXIT.usage,
+        hint: `${placed.place.command} has: ${[...placed.commands.keys()].join(", ")}. Run ${placed.place.command} --help.`
+      }
+    );
   }
   return { word, next };
 };
@@ -337,7 +333,7 @@ const runGroup = (placed: PlacedNode, rest: readonly string[], io: ScriptIo): nu
   try {
     values = parseCommandLine(rest, place.allOptions).values;
   } catch (error) {
-    return reportFailure(usageError(messageOf(error)), plainLogger(io), place.command);
+    return reportFailure(usageError(parseProblem(error, place.allOptions)), plainLogger(io), place.command);
   }
   if (flag(values["help"])) {
     io.stdout.write(place.help(!flag(values["no-color"]) && supportsColor(io.stdout, io.env)));
