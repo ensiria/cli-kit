@@ -22,6 +22,7 @@ import {
   splitAtRaw
 } from "./args.ts";
 import { ENV, EXIT } from "./constants.ts";
+import { stopPrograms } from "./exec.ts";
 import { createExitHooks, listenForSignals } from "./exit.ts";
 import { formatJson } from "./files.ts";
 import { supportsUnicode } from "./glyphs.ts";
@@ -271,6 +272,8 @@ const execute = async <
     signalled.then((code) => ({ code, isSignal: true }))
   ]);
   stopListening();
+  // no program the work started outlives it, whether it ended, failed or was stopped
+  stopPrograms();
   for (const error of await hooks.runAll()) log.warn(`cleanup failed: ${messageOf(error)}`);
   if (outcome.isSignal) io.exit(outcome.code);
   return outcome.code;

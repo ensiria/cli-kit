@@ -3,6 +3,7 @@
  *
  * @module
  */
+import type { ProgramRunner } from "./exec.types.ts";
 
 /** A stream the kit writes to and asks whether it is a terminal. */
 export interface OutputStream {
@@ -60,4 +61,9 @@ export interface ScriptIo {
   setExitCode: (code: number) => void;
   /** Ends the process at once, after a signal has run the cleanups. */
   exit: (code: number) => void;
+  /**
+   * Starts the programs `exec()` runs; none spawns them. A test's io (`createTestIo({ exec })`) answers here without
+   * starting real programs.
+   */
+  runProgram?: ProgramRunner | undefined;
 }

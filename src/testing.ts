@@ -90,7 +90,8 @@ export const createTestIo = (options: TestIoOptions = {}): TestIo => {
       },
       exit: (code: number): void => {
         exitedWith = code;
-      }
+      },
+      ...(options.exec === undefined ? {} : { runProgram: options.exec })
     },
     stdout: stdout.text,
     stderr: stderr.text,

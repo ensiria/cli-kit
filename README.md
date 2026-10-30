@@ -154,6 +154,33 @@ TypeScript cannot type them from a plain object. The top adds `name`, `command` 
 - **Docs**: the JSON description, Markdown, man page and completions cover the whole tree (bash, zsh and fish complete
   the command words, then the options of the command they lead to); `cli-kit docs` lists a tree as one script.
 
+### `exec`
+
+`exec(program, args, options?)` runs a program and resolves to `{ stdout, stderr, code, signal }`:
+
+```ts
+import { exec } from "@ensiria/cli-kit/exec";
+
+run: async ({ io }) => {
+  const { stdout } = await exec("git", ["rev-parse", "--show-toplevel"], { io });
+  await exec("pnpm", ["build"], { output: "prefix", prefix: "build", timeoutMs: 120_000, io });
+}
+```
+
+- **Arguments are an array**, never a shell string; the program is looked for on `env.PATH`.
+- **Options**: `cwd`, `env` (default: the io's), `input` (written to stdin, then closed), `timeoutMs` (SIGTERM, then
+  SIGKILL 2 s later), `output` (`"capture"`, the default: kept and returned; `"inherit"`: printed as it comes, the
+  terminal itself when the script has one; `"prefix"`: each line on stderr after `prefix │`, and kept), `check`
+  (default `true`), `io` (pass the script's `context.io`).
+- **Failures** are `ScriptError`s that read the same in every script: a non-zero exit names the command and its code,
+  with the last lines of its stderr as the hint (`check: false` returns it instead); a missing program reads
+  "`git` is not installed or not on the PATH"; a timeout says the program was stopped.
+- **No child outlives the script**: programs still running when the run ends, fails or is stopped with Ctrl+C are
+  stopped.
+- **Tests start no programs**: `createTestIo({ exec: (request) => … })` answers each request (the program, its
+  arguments, its options resolved) with `{ kind: "ended", stdout, stderr, code, signal }`, `{ kind: "missing" }`,
+  `{ kind: "timeout", stdout, stderr }` or `{ kind: "failed", message }`.
+
 ### `log`
 
 `createLogger({ stdout, stderr, quiet?, verbose?, json?, color?, colorStderr?, unicode? })` → `info`, `success`,

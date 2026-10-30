@@ -3,10 +3,13 @@
  *
  * @module
  */
+import type { ProgramRunner } from "./exec.types.ts";
 import type { ExitSignal, ScriptIo } from "./io.types.ts";
 
 /** How the fake terminal of a test behaves. */
 export interface TestIoOptions {
+  /** Answers the programs `exec()` runs, instead of starting them; none leaves them to the real runner. */
+  exec?: ProgramRunner | undefined;
   /** Whether stdout, stderr and stdin claim to be a terminal. @defaultValue false */
   tty?: boolean | undefined;
   /** Terminal width. @defaultValue 80 */
