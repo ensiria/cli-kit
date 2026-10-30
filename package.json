@@ -65,6 +65,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "2.6.2",
+    "@nx/js": "24.0.3",
     "@types/node": "24.19.2",
     "@typescript-eslint/parser": "8.72.0",
     "@typescript/native": "npm:typescript@7.0.2",
@@ -72,8 +73,12 @@
     "eslint-plugin-jsdoc": "65.4.2",
     "eslint-plugin-tsdoc": "0.5.4",
     "jiti": "2.7.0",
+    "nx": "24.0.3",
     "typescript": "npm:@typescript/typescript6@6.0.2",
     "vitest": "5.0.5",
     "zod": "4.6.7"
+  },
+  "nx": {
+    "name": "@ensiria/cli-kit"
   }
 }

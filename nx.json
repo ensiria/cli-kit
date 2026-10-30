@@ -1,0 +1,22 @@
+{
+  "$schema": "./node_modules/nx/schemas/nx-schema.json",
+  "release": {
+    "projects": ["@ensiria/cli-kit"],
+    "version": {
+      "conventionalCommits": true,
+      "fallbackCurrentVersionResolver": "disk"
+    },
+    "changelog": {
+      "workspaceChangelog": {
+        "createRelease": "github",
+        "file": "{workspaceRoot}/CHANGELOG.md"
+      }
+    },
+    "git": {
+      "commitMessage": "chore(release): {version}"
+    },
+    "releaseTag": {
+      "pattern": "v{version}"
+    }
+  }
+}

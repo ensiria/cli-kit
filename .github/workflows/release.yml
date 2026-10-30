@@ -1,0 +1,64 @@
+# Releases the package when develop is merged into main: the version from the conventional commits since the last
+# release (in 0.x a breaking change bumps the minor, a feature or a fix the patch), the changelog, the release commit
+# and its tag, the GitHub release, then npm with provenance through trusted publishing (no token). The release commit
+# then goes back to develop. The first release is started by hand with its version (0.1.0).
+name: release
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "An explicit version, for the first release (0.1.0); empty takes it from the commits"
+        required: false
+        type: string
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+permissions:
+  # the release commit, its tag and the GitHub release
+  contents: write
+  # npm's trusted publishing and the provenance statement
+  id-token: write
+
+jobs:
+  release:
+    # the release commit itself, pushed to main by this job, releases nothing
+    if: ${{ !startsWith(github.event.head_commit.message, 'chore(release):') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+          registry-url: https://registry.npmjs.org
+      # trusted publishing needs npm 11.5.1 or later
+      - run: npm install --global npm@latest
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm checks
+      - name: Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_CONFIG_PROVENANCE: "true"
+          VERSION: ${{ inputs.version }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if [ -n "$VERSION" ]; then
+            pnpm nx release "$VERSION" --first-release --yes
+          else
+            pnpm nx release --yes
+          fi
+      - name: Bring the release commit back to develop
+        run: |
+          git fetch origin develop
+          git checkout develop
+          git merge --no-edit main
+          git push origin develop

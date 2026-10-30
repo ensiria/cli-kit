@@ -398,4 +398,19 @@ expect(run.stdout).toContain("valid");
 ```sh
 pnpm test                                    # Vitest
 pnpm typecheck                               # types, tests included
+pnpm checks                                  # everything the CI runs: types, lint, tests, build
 ```
+
+Work goes to `develop`; `main` is what is released. Commits follow
+[Conventional Commits](https://www.conventionalcommits.org) (`feat:`, `fix:`, `feat!:` or a `BREAKING CHANGE:` footer),
+since the version comes from them.
+
+## Releasing
+
+Merging `develop` into `main` releases the package (`.github/workflows/release.yml`, with
+[Nx release](https://nx.dev/features/manage-releases)): the checks run, the version comes from the commits since the
+last release (while the version is 0.x, a breaking change bumps the minor and a feature or a fix the patch, so
+`^0.1.0` gets features and fixes, never a break), `CHANGELOG.md` and the GitHub release are written, the release
+commit and its `v<version>` tag go to `main`, the package is published to npm with provenance through trusted
+publishing (no token), and the release commit goes back to `develop`. The first release is started by hand from the
+Actions tab with its version (`0.1.0`).
