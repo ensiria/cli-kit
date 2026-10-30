@@ -1,0 +1,17 @@
+// The published package: JavaScript and declarations in `dist/`, the `.ts` extensions of relative imports rewritten to
+// `.js`, since Node does not strip types inside `node_modules`.
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "rewriteRelativeImportExtensions": true,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "rootDir": ".",
+    "outDir": "dist"
+  },
+  "include": ["src/**/*.ts", "bin/**/*.ts"],
+  "exclude": ["**/*.test.ts"]
+}

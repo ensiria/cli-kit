@@ -1,7 +1,6 @@
 {
   "name": "@ensiria/cli-kit",
   "version": "0.0.0",
-  "private": true,
   "description": "Helpers and constants for scripts and command-line tools that all look and behave the same: typed options and generated help, output and formatting helpers, spinners, progress, task lists, prompts, man pages and completions, and test helpers.",
   "keywords": [
     "cli",
@@ -17,10 +16,13 @@
   ],
   "license": "MIT",
   "author": "Jason Scoppetta",
+  "homepage": "https://github.com/Ensiria/cli-kit#readme",
+  "bugs": {
+    "url": "https://github.com/Ensiria/cli-kit/issues"
+  },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/JasonScoppetta/dev-tooling.git",
-    "directory": "packages/cli-kit"
+    "url": "git+https://github.com/Ensiria/cli-kit.git"
   },
   "type": "module",
   "sideEffects": false,
@@ -31,24 +33,45 @@
     "cli-kit": "./bin/cli-kit.ts"
   },
   "files": [
+    "dist",
     "src",
-    "bin",
     "README.md",
     "LICENSE"
   ],
   "publishConfig": {
-    "access": "public"
+    "access": "public",
+    "exports": {
+      "./*": {
+        "types": "./dist/src/*.d.ts",
+        "default": "./dist/src/*.js"
+      }
+    },
+    "bin": {
+      "cli-kit": "./dist/bin/cli-kit.js"
+    }
   },
   "engines": {
-    "node": ">=24"
+    "node": ">=22.18"
   },
+  "packageManager": "pnpm@10.19.0",
   "scripts": {
+    "build": "rm -rf dist && tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p .",
     "test": "vitest run",
-    "typecheck": "tsc -p ."
+    "lint": "biome ci . && eslint .",
+    "format": "biome check --write .",
+    "prepack": "pnpm build"
   },
   "devDependencies": {
-    "@radar/typescript-config": "workspace:*",
+    "@biomejs/biome": "2.6.2",
     "@types/node": "24.19.2",
+    "@typescript-eslint/parser": "8.72.0",
+    "@typescript/native": "npm:typescript@7.0.2",
+    "eslint": "9.39.5",
+    "eslint-plugin-jsdoc": "65.4.2",
+    "eslint-plugin-tsdoc": "0.5.4",
+    "jiti": "2.7.0",
+    "typescript": "npm:@typescript/typescript6@6.0.2",
     "vitest": "5.0.5"
   }
 }

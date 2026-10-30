@@ -1,9 +1,10 @@
+#!/usr/bin/env node
 /**
  * The kit's own command: generates the scripts' reference (`docs/scripts.md`, man pages) from `scripts.json`, checks
  * it is up to date, and prints a script's completions or man page.
  *
  * @remarks
- * Built on the kit like every other script; `node packages/cli-kit/bin/cli-kit.ts --help` lists the commands.
+ * Built on the kit like every other script; `cli-kit --help` lists the commands.
  *
  * @module
  */
@@ -20,7 +21,7 @@ import { formatCompletion, formatHelpMan, SHELLS } from "../src/docs.ts";
 import { findUp, readFileSafe, writeIfChanged } from "../src/files.ts";
 import { defineScript, ScriptError, usageError } from "../src/script.ts";
 
-const COMMAND = "node packages/cli-kit/bin/cli-kit.ts";
+const COMMAND = "cli-kit";
 
 await defineScript({
   name: "cli-kit",

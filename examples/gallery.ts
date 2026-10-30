@@ -4,7 +4,7 @@
  *
  * @remarks
  * Every helper of the kit has an entry here; a new helper adds one. The sections are listed by
- * `node packages/cli-kit/examples/gallery.ts --help`.
+ * `node examples/gallery.ts --help`.
  *
  * @module
  */
@@ -137,7 +137,7 @@ const SECTIONS: Readonly<Record<string, GallerySection>> = {
       log.plain(
         tree(
           {
-            label: "packages/cli-kit",
+            label: "cli-kit",
             children: [
               { label: "src", children: [{ label: "script.ts" }, { label: "layout.ts" }] },
               { label: "test" },
@@ -300,7 +300,7 @@ const SECTIONS: Readonly<Record<string, GallerySection>> = {
 
 await defineScript({
   name: "gallery",
-  command: "node packages/cli-kit/examples/gallery.ts",
+  command: "node examples/gallery.ts",
   summary: "Print every helper of @ensiria/cli-kit.",
   icon: "package",
   prompts: true,
@@ -308,10 +308,10 @@ await defineScript({
     { name: "sections", description: "Only these sections.", variadic: true, choices: Object.keys(SECTIONS) }
   ],
   examples: [
-    { command: "node packages/cli-kit/examples/gallery.ts", description: "Everything." },
-    { command: "node packages/cli-kit/examples/gallery.ts table box", description: "Two sections." },
+    { command: "node examples/gallery.ts", description: "Everything." },
+    { command: "node examples/gallery.ts table box", description: "Two sections." },
     {
-      command: "CLI_KIT_ASCII=1 node packages/cli-kit/examples/gallery.ts",
+      command: "CLI_KIT_ASCII=1 node examples/gallery.ts",
       description: "The ASCII fallbacks."
     }
   ],

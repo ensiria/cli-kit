@@ -1,9 +1,41 @@
-// @ensiria/cli-kit runs on Node with its types stripped, so relative imports carry the `.ts` extension.
+// Type checking for every TypeScript file of the package: the sources, the command, the gallery and the tests. The
+// package runs on Node with its types stripped, so relative imports carry the `.ts` extension; `tsconfig.build.json`
+// emits the published JavaScript.
 {
   "$schema": "https://json.schemastore.org/tsconfig",
-  "extends": "../../config/typescript/node.json",
   "compilerOptions": {
-    "allowImportingTsExtensions": true
+    // Type checking: everything strict, plus the checks strict leaves out
+    "strict": true,
+    // arr[i] and record[key] may be undefined: the type says so, and the code checks
+    "noUncheckedIndexedAccess": true,
+    // `prop?: T` means "absent", not "undefined"
+    "exactOptionalPropertyTypes": true,
+    "noImplicitOverride": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    // a property read from an index signature uses brackets, so it does not look like a declared one
+    "noPropertyAccessFromIndexSignature": true,
+    "useUnknownInCatchVariables": true,
+
+    // Modules: imports are written as they run; only syntax Node can strip
+    "verbatimModuleSyntax": true,
+    "erasableSyntaxOnly": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "moduleDetection": "force",
+    "allowImportingTsExtensions": true,
+
+    // Node
+    "lib": ["es2024"],
+    "types": ["node"],
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+
+    // Output: Node runs the sources; tsc only checks here
+    "noEmit": true,
+    "target": "es2024",
+    "skipLibCheck": true
   },
-  "include": ["src/**/*.ts", "test/**/*.ts", "examples/**/*.ts", "bin/**/*.ts"]
+  "include": ["src/**/*.ts", "test/**/*.ts", "examples/**/*.ts", "bin/**/*.ts", "*.config.ts", "*.config.mts"]
 }
