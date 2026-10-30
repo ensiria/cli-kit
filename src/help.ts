@@ -20,8 +20,32 @@ import { paint } from "./style.ts";
  */
 export const optionValueLabel = (option: ScriptOption): string => {
   if (option.type === "boolean") return "";
-  const name = option.valueName ?? "value";
+  const name = option.valueName ?? defaultValueName(option);
   return option.value === "optional" ? `[=<${name}>]` : ` <${name}>`;
+};
+
+/**
+ * The placeholder of an option's value when it names none: `number` for a number option, `value` otherwise.
+ *
+ * @param option - The declaration.
+ * @returns The placeholder.
+ */
+export const defaultValueName = (option: ScriptOption): string =>
+  option.type === "number" ? "number" : "value";
+
+/**
+ * A number option's range as the help shows it: `0-600`, `at least 0`, `at most 600`, and `whole number`.
+ *
+ * @param option - The declaration.
+ * @returns The facts, none for an option without them.
+ */
+const numberFacts = (option: ScriptOption): string[] => {
+  const facts: string[] = [];
+  if (option.min !== undefined && option.max !== undefined) facts.push(`${option.min}-${option.max}`);
+  else if (option.min !== undefined) facts.push(`at least ${option.min}`);
+  else if (option.max !== undefined) facts.push(`at most ${option.max}`);
+  if (option.integer) facts.push("whole number");
+  return facts;
 };
 
 /**
@@ -47,6 +71,7 @@ export const optionFacts = (option: ScriptOption): string => {
   if (option.required) facts.push("required");
   if (option.value === "optional" && option.impliedValue) facts.push(`alone: ${option.impliedValue}`);
   if (option.choices && option.choices.length > 0) facts.push(`one of: ${option.choices.join(", ")}`);
+  facts.push(...numberFacts(option));
   if (option.default !== undefined) facts.push(`default: ${option.default}`);
   if (option.env) facts.push(`env: ${option.env}`);
   return facts.length > 0 ? `(${facts.join("; ")})` : "";

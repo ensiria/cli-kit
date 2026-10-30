@@ -71,16 +71,107 @@ export const mergeOptions = (
   return { ...own, ...extra };
 };
 
-/** Checks the option declarations: `required`, `value` and `impliedValue` belong to string options. */
+/**
+ * Checks the option declarations: `required`, `value` and `impliedValue` belong to options with a value; `min`, `max`
+ * and `integer` to number options, whose default is a number in their range and which have no choices or optional
+ * value; a string option's default is a string.
+ */
 export const checkOptions = (name: string, options: Readonly<Record<string, ScriptOption>>): void => {
   for (const [optionName, option] of Object.entries(options)) {
-    if (option.type === "boolean" && (option.required || option.value || option.impliedValue !== undefined)) {
-      throw new Error(`${name}: --${optionName} is a boolean, it takes no value and cannot be required`);
+    const label = `${name}: --${optionName}`;
+    checkValueRules(label, option);
+    if (option.type === "number") checkNumberOption(label, option);
+    else if (option.min !== undefined || option.max !== undefined || option.integer) {
+      throw new Error(`${label} is not a number option: min, max and integer belong to number options`);
     }
-    if (option.impliedValue !== undefined && option.value !== "optional") {
-      throw new Error(`${name}: --${optionName} has an impliedValue but its value is not optional`);
+    if (option.type === "string" && typeof option.default === "number") {
+      throw new Error(`${label} is a string option: its default is a string`);
     }
   }
+};
+
+/**
+ * Checks the rules of an option's value: a boolean takes none and cannot be required, an implied value needs an
+ * optional one.
+ *
+ * @param label - The option, for the message.
+ * @param option - Its declaration.
+ * @throws Error at definition time.
+ */
+const checkValueRules = (label: string, option: ScriptOption): void => {
+  if (option.type === "boolean" && (option.required || option.value || option.impliedValue !== undefined)) {
+    throw new Error(`${label} is a boolean, it takes no value and cannot be required`);
+  }
+  if (option.impliedValue !== undefined && option.value !== "optional") {
+    throw new Error(`${label} has an impliedValue but its value is not optional`);
+  }
+};
+
+/**
+ * Checks a number option's declaration.
+ *
+ * @param label - The option, for the message.
+ * @param option - Its declaration.
+ * @throws Error at definition time.
+ */
+const checkNumberOption = (label: string, option: ScriptOption): void => {
+  if (option.choices) throw new Error(`${label} is a number option: give it min and max, not choices`);
+  if (option.value === "optional")
+    throw new Error(`${label} is a number option: its value cannot be optional`);
+  if (option.min !== undefined && option.max !== undefined && option.min > option.max) {
+    throw new Error(`${label} has min ${option.min} above max ${option.max}`);
+  }
+  if (typeof option.default === "string")
+    throw new Error(`${label} is a number option: its default is a number`);
+  if (option.default !== undefined) numberProblem(option, option.default, label);
+};
+
+/**
+ * Why a number is outside what an option takes, or nothing.
+ *
+ * @param option - The declaration.
+ * @param value - The number.
+ * @param label - The option (and, for a definition, the script), for the message.
+ * @throws Error at definition time for a default out of range; the caller turns a typed value's into a usage error.
+ */
+const numberProblem = (option: ScriptOption, value: number, label: string): void => {
+  if (option.integer && !Number.isInteger(value))
+    throw new Error(`${label} must be a whole number (got ${value})`);
+  const isBelow = option.min !== undefined && value < option.min;
+  const isAbove = option.max !== undefined && value > option.max;
+  if (isBelow || isAbove) throw new Error(`${label} must be ${rangeText(option)} (got ${value})`);
+};
+
+/**
+ * A number option's range in words: `between 0 and 600`, `at least 0`, `at most 600`.
+ *
+ * @param option - The declaration.
+ * @returns The range, or an empty text without one.
+ */
+export const rangeText = (option: ScriptOption): string => {
+  if (option.min !== undefined && option.max !== undefined) return `between ${option.min} and ${option.max}`;
+  if (option.min !== undefined) return `at least ${option.min}`;
+  if (option.max !== undefined) return `at most ${option.max}`;
+  return "";
+};
+
+/**
+ * A number from the text the user gave, checked against the option.
+ *
+ * @param label - The option (`--timeout`, or `TIMEOUT=…` for its environment variable).
+ * @param option - Its declaration.
+ * @param text - What was given.
+ * @throws ArgumentError when the text is not a number, or the number is not what the option takes.
+ */
+const numberFrom = (label: string, option: ScriptOption, text: string): number => {
+  const value = text.trim() === "" ? Number.NaN : Number(text);
+  if (!Number.isFinite(value)) throw new ArgumentError(`${label} must be a number (got "${text}")`);
+  try {
+    numberProblem(option, value, label);
+  } catch (error) {
+    throw new ArgumentError(messageOf(error));
+  }
+  return value;
 };
 
 /**
@@ -122,7 +213,7 @@ export const checkPositionals = (name: string, positionals: readonly ScriptPosit
 export const takesValue = (token: string, options: Readonly<Record<string, ScriptOption>>): boolean =>
   Object.entries(options).some(
     ([name, option]) =>
-      option.type === "string" &&
+      option.type !== "boolean" &&
       option.value !== "optional" &&
       (token === `--${name}` || (option.short !== undefined && token === `-${option.short}`))
   );
@@ -167,7 +258,7 @@ export const parseCommandLine = (
       Object.entries(options).map(([name, option]) => [
         name,
         {
-          type: option.type,
+          type: option.type === "boolean" ? "boolean" : "string",
           ...(option.short ? { short: option.short } : {}),
           ...(option.multiple ? { multiple: true } : {})
         }
@@ -205,9 +296,28 @@ const checkChoices = (label: string, value: ParsedValue, choices: readonly strin
   }
 };
 
-/** Whether a resolved value counts as absent (nothing, or an empty list). */
-const isAbsent = (value: ParsedValue): boolean =>
-  value === undefined || (Array.isArray(value) && value.length === 0);
+/** An option's value as `run` receives it: parseArgs's, or a number option's numbers. */
+type OptionValueAtRun = ParsedValue | number | readonly number[];
+
+/**
+ * A number option's numbers from the texts given on the command line or in its environment variable.
+ *
+ * @param name - The option.
+ * @param option - Its declaration.
+ * @param value - What was given; none when nothing was.
+ * @param isFromEnv - Whether it came from the environment variable, which the message then names.
+ */
+const numbersOf = (
+  name: string,
+  option: ScriptOption,
+  value: ParsedValue,
+  isFromEnv: boolean
+): number | readonly number[] | undefined => {
+  const label = isFromEnv && option.env ? option.env : `--${name}`;
+  if (value === undefined) return undefined;
+  if (Array.isArray(value)) return value.map((text) => numberFrom(label, option, String(text)));
+  return numberFrom(label, option, String(value));
+};
 
 /** One option's value: command line, then environment, then the declared default; required ones checked. */
 const optionValue = (
@@ -215,17 +325,30 @@ const optionValue = (
   option: ScriptOption,
   given: ParsedValue,
   env: ScriptIo["env"]
-): ParsedValue => {
-  const value = given ?? envValue(name, option, env);
+): OptionValueAtRun => {
+  const fromEnv = given === undefined ? envValue(name, option, env) : undefined;
+  const value = given ?? fromEnv;
   checkChoices(`--${name}`, value, option.choices);
   if (option.type === "boolean") return option.multiple ? (value ?? []) : flag(value);
-  const resolved = value ?? option.default;
-  if (option.required && isAbsent(resolved)) {
-    throw new ArgumentError(
-      option.env ? `missing option --${name} (or ${option.env})` : `missing option --${name}`
-    );
-  }
+  const typed = option.type === "number" ? numbersOf(name, option, value, given === undefined) : value;
+  const resolved = typed ?? option.default;
+  if (option.required) checkPresent(name, option, resolved);
   return resolved ?? (option.multiple ? [] : undefined);
+};
+
+/**
+ * Fails when a required option has no value after the command line, its environment variable and its default.
+ *
+ * @param name - The option.
+ * @param option - Its declaration.
+ * @param value - Its value so far.
+ * @throws ArgumentError naming the option (and its environment variable).
+ */
+const checkPresent = (name: string, option: ScriptOption, value: OptionValueAtRun): void => {
+  if (value !== undefined && !(Array.isArray(value) && value.length === 0)) return;
+  throw new ArgumentError(
+    option.env ? `missing option --${name} (or ${option.env})` : `missing option --${name}`
+  );
 };
 
 /** The script's own option values, typed from their declarations. */

@@ -11,7 +11,14 @@
  */
 import { formatTreeCompletion } from "./commandCompletions.ts";
 import type { OptionDescription, ScriptDescription, Shell } from "./docs.types.ts";
-import { isGroup, optionFacts, optionValueLabel, positionalLabel, usageLine } from "./help.ts";
+import {
+  defaultValueName,
+  isGroup,
+  optionFacts,
+  optionValueLabel,
+  positionalLabel,
+  usageLine
+} from "./help.ts";
 import type { HelpSource } from "./help.types.ts";
 
 /**
@@ -20,22 +27,46 @@ import type { HelpSource } from "./help.types.ts";
  * @param options - The declarations, by long name.
  */
 const optionDescriptions = (options: HelpSource["options"]): OptionDescription[] =>
-  Object.entries(options).map(
-    ([name, option]): OptionDescription => ({
-      name,
-      type: option.type,
-      description: option.description,
-      short: option.short ?? null,
-      valueName: option.type === "string" ? (option.valueName ?? "value") : null,
-      multiple: option.multiple ?? false,
-      default: option.default ?? null,
-      choices: option.choices ?? null,
-      env: option.env ?? null,
-      required: option.required ?? false,
-      value: option.type === "string" ? (option.value ?? "required") : null,
-      impliedValue: option.value === "optional" ? (option.impliedValue ?? "") : null
-    })
-  );
+  Object.entries(options).map(([name, option]) => optionDescription(name, option));
+
+/**
+ * One option as data, absent fields `null` (or `false`).
+ *
+ * @param name - Its long name.
+ * @param option - Its declaration.
+ */
+const optionDescription = (name: string, option: HelpSource["options"][string]): OptionDescription => ({
+  name,
+  type: option.type,
+  description: option.description,
+  short: option.short ?? null,
+  ...valueDescription(option),
+  multiple: option.multiple ?? false,
+  default: option.default ?? null,
+  min: option.min ?? null,
+  max: option.max ?? null,
+  integer: option.integer ?? false,
+  choices: option.choices ?? null,
+  env: option.env ?? null,
+  required: option.required ?? false
+});
+
+/**
+ * An option's value fields as data: its placeholder and whether its value is required or optional, all `null` for a
+ * boolean.
+ *
+ * @param option - The declaration.
+ */
+const valueDescription = (
+  option: HelpSource["options"][string]
+): Pick<OptionDescription, "valueName" | "value" | "impliedValue"> =>
+  option.type === "boolean"
+    ? { valueName: null, value: null, impliedValue: null }
+    : {
+        valueName: option.valueName ?? defaultValueName(option),
+        value: option.value ?? "required",
+        impliedValue: option.value === "optional" ? (option.impliedValue ?? "") : null
+      };
 
 /**
  * A script as data, for tools (docs generators, completions, other programs).
@@ -63,6 +94,12 @@ export const formatHelpJson = (source: HelpSource): ScriptDescription => ({
   commands: (source.commands ?? []).map(formatHelpJson),
   aliases: source.aliases ?? {}
 });
+
+/** What zsh offers for an option's value: its choices, nothing for a number, files otherwise. */
+const zshValueAction = (option: HelpSource["options"][string]): string => {
+  if (option.choices) return `(${option.choices.join(" ")})`;
+  return option.type === "number" ? " " : "_files";
+};
 
 /** Escapes text for roff: backslashes, dashes, and a dot or quote at the start of a line. */
 const roff = (text: string): string =>
@@ -177,9 +214,9 @@ const zshCompletion = (source: HelpSource, command: string): string => {
     const flags = option.short ? `{-${option.short},--${name}${equals}}` : `--${name}${equals}`;
     const exclusive = option.short ? `'(-${option.short} --${name})'` : "";
     const value =
-      option.type === "string"
-        ? `:${option.valueName ?? "value"}:${option.choices ? `(${option.choices.join(" ")})` : "_files"}`
-        : "";
+      option.type === "boolean"
+        ? ""
+        : `:${option.valueName ?? defaultValueName(option)}:${zshValueAction(option)}`;
     const repeat = option.multiple ? "'*'" : "";
     return `    ${repeat}${exclusive}${flags}'[${zshEscape(option.description)}]${value}'`;
   });
@@ -207,6 +244,7 @@ const fishCompletion = (source: HelpSource, command: string): string => {
     if (option.short) parts.push(`-s ${option.short}`);
     if (option.type === "string")
       parts.push(option.choices ? `-x -a ${quote(option.choices.join(" "))}` : "-r");
+    if (option.type === "number") parts.push("-x");
     parts.push(`-d ${quote(option.description)}`);
     return parts.join(" ");
   });

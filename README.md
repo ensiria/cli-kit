@@ -74,8 +74,10 @@ The definition (`script.types`: `ScriptDefinition`):
 | `examples` | `{ command, description }[]` |
 | `run(context)` | The work; may be async; its return value is the `--json` document |
 
-`ScriptOption` (`help.types`): `type` (`"boolean"` / `"string"`), `description`, `short`, `valueName`, `multiple`,
-`default` (strings), `choices` (strings, validated, offered by completions), `env` (the variable read when the option
+`ScriptOption` (`help.types`): `type` (`"boolean"` / `"string"` / `"number"`), `description`, `short`, `valueName`,
+`multiple`, `default` (a string, or a number for a number option), `choices` (strings, validated, offered by
+completions), `min`, `max` and `integer` (number options: a value that does not parse, falls outside the range or is
+not whole is a usage error naming the option and the range; the help, the JSON and the completions show them), `env` (the variable read when the option
 is not on the command line: booleans accept `1/true/yes` and `0/false/no`, a multiple string splits on commas),
 `required` (strings: a usage error when there is no value after the command line, `env` and `default`), `value`
 (`"required"`, the default: `--base main`; `"optional"`: `--color` alone takes `impliedValue`, `--color=never` its own
@@ -86,7 +88,8 @@ arguments a wrapper hands to the command it runs (`node mcp-supervisor.mts <cli>
 options go before it, so `--help` still works; a raw positional with none before it takes the whole command line.
 
 Values are typed from the declarations: a boolean is `boolean`; a string is `string | undefined`, or `string` with a
-`default` or `required`, or the union of its `choices`; `multiple` makes an array. Positionals arrive by name in `args`
+`default` or `required`, or the union of its `choices`; a number the same way with `number`; `multiple` makes an
+array. A number option's `env` value is read as a number too (and split on commas with `multiple`). Positionals arrive by name in `args`
 (`string` when required, `string | undefined` when not, `string[]` when variadic or raw).
 
 Rules between options (one needs or excludes another) stay in `run`, checked by hand and thrown as `usageError`, so

@@ -23,11 +23,17 @@ export type OptionValue<TOption extends ScriptOption> = TOption extends { type: 
   ? TOption extends { multiple: true }
     ? boolean[]
     : boolean
-  : TOption extends { multiple: true }
-    ? StringValue<TOption>[]
-    : TOption extends { default: string } | { required: true }
-      ? StringValue<TOption>
-      : StringValue<TOption> | undefined;
+  : TOption extends { type: "number" }
+    ? TOption extends { multiple: true }
+      ? number[]
+      : TOption extends { default: number } | { required: true }
+        ? number
+        : number | undefined
+    : TOption extends { multiple: true }
+      ? StringValue<TOption>[]
+      : TOption extends { default: string } | { required: true }
+        ? StringValue<TOption>
+        : StringValue<TOption> | undefined;
 
 /** All parsed option values of a script, typed from its option declarations. */
 export type OptionValues<TOptions extends Readonly<Record<string, ScriptOption>>> = {

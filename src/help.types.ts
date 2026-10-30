@@ -7,8 +7,11 @@
 
 /** One option a script accepts. */
 export interface ScriptOption {
-  /** `boolean` for a flag, `string` for an option with a value. */
-  readonly type: "boolean" | "string";
+  /**
+   * `boolean` for a flag, `string` for an option with a value, `number` for one whose value is a number (checked, and
+   * typed `number` in `run`).
+   */
+  readonly type: "boolean" | "string" | "number";
   /** What the option does, one sentence. */
   readonly description: string;
   /** One-letter alias (`-c`). */
@@ -17,8 +20,14 @@ export interface ScriptOption {
   readonly valueName?: string | undefined;
   /** Whether the option may be given more than once (its value is then an array). @defaultValue false */
   readonly multiple?: boolean | undefined;
-  /** Value of a string option when it is not given (on the command line nor in `env`). */
-  readonly default?: string | undefined;
+  /** Value of a string or number option when it is not given (on the command line nor in `env`). */
+  readonly default?: string | number | undefined;
+  /** The smallest value a number option takes. */
+  readonly min?: number | undefined;
+  /** The largest value a number option takes. */
+  readonly max?: number | undefined;
+  /** Whether a number option takes whole numbers only. @defaultValue false */
+  readonly integer?: boolean | undefined;
   /** The only values a string option accepts; anything else is a usage error. Shell completions offer them. */
   readonly choices?: readonly string[] | undefined;
   /**
@@ -28,7 +37,7 @@ export interface ScriptOption {
   readonly env?: string | undefined;
   /**
    * Whether the script fails with a usage error when the option has no value after the command line, `env` and
-   * `default` (string options only). Its value is then typed `string`.
+   * `default` (string and number options). Its value is then typed `string` (or `number`).
    * @defaultValue false
    */
   readonly required?: boolean | undefined;

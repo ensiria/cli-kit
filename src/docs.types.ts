@@ -13,7 +13,7 @@ export interface OptionDescription {
   /** Long name, without dashes. */
   readonly name: string;
   /** `boolean` or `string`. */
-  readonly type: "boolean" | "string";
+  readonly type: "boolean" | "string" | "number";
   /** What it does. */
   readonly description: string;
   /** One-letter alias, without the dash. */
@@ -23,7 +23,13 @@ export interface OptionDescription {
   /** Whether it may be given more than once. */
   readonly multiple: boolean;
   /** Default value of a string option. */
-  readonly default: string | null;
+  readonly default: string | number | null;
+  /** A number option's smallest value. */
+  readonly min: number | null;
+  /** A number option's largest value. */
+  readonly max: number | null;
+  /** Whether a number option takes whole numbers only. */
+  readonly integer: boolean;
   /** Accepted values. */
   readonly choices: readonly string[] | null;
   /** Environment variable read when it is not given. */
