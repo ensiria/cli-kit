@@ -70,4 +70,10 @@ export interface ScriptDescription {
   readonly positionals: readonly PositionalDescription[];
   /** Its examples. */
   readonly examples: readonly { readonly command: string; readonly description: string }[];
+  /** For a subcommand: the options of the groups above it, which it accepts too; empty for a script. */
+  readonly inheritedOptions: readonly OptionDescription[];
+  /** For a group of commands: its commands, each described the same way (`name` is the command word); else empty. */
+  readonly commands: readonly ScriptDescription[];
+  /** For a group of commands: the old names it still accepts, each with the command it now is; else empty. */
+  readonly aliases: Readonly<Record<string, string>>;
 }

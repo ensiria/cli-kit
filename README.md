@@ -98,9 +98,61 @@ run: ({ options }) => {
 }
 ```
 
-The context (`ScriptContext`): `options`, `args`, `positionals` (raw), `log`, `style` (`{ color, unicode, width }`
-for the rendering helpers), `io`, `isJson`, `isYes`, `onExit(cleanup)` (returns a remover), `onInterrupt(handler)` (a graceful stop: the first Ctrl+C calls
-it and the run ends when `run` returns; a second one exits at once).
+The context (`ScriptContext`): `options`, `args`, `positionals` (raw), `path` (the command words it was called through,
+empty for a script), `log`, `style` (`{ color, unicode, width }` for the rendering helpers), `io`, `isJson`, `isYes`,
+`onExit(cleanup)` (returns a remover), `onInterrupt(handler)` (a graceful stop: the first Ctrl+C calls it and the run
+ends when `run` returns; a second one exits at once).
+
+### `commands`
+
+A command line made of named commands, nested in groups to any depth (`radar-kb note add`):
+
+```ts
+import { defineCommands } from "@ensiria/cli-kit/commands";
+
+await defineCommands({
+  name: "radar-kb",
+  command: "radar-kb",
+  summary: "Notes, decisions and plans of the project's knowledge",
+  options: { project: { type: "string", env: "RADAR_PROJECT", description: "The project." } },
+  aliases: { "re-index": "reindex" },
+  commands: (kb) => ({
+    note: kb.group({
+      summary: "The notes",
+      commands: (note) => ({
+        add: note.command({
+          summary: "Add a note",
+          options: { pin: { type: "boolean", description: "Keep it at the top." } },
+          // options.project: string | undefined (the group's), options.pin: boolean (its own)
+          run: ({ options, path, log }) => log.info(`${path.join(" ")} in ${options.project ?? "every project"}`)
+        })
+      })
+    }),
+    reindex: kb.command({ summary: "Rebuild the index", run: () => undefined })
+  })
+}).run();
+```
+
+| Export | What it is |
+|---|---|
+| `defineCommands(definition)` | Describes the top group; returns what `defineScript` returns (`run`, `help`, `markdown`, `source`), its help and docs covering every command |
+
+A group's `commands` receives a scope: `scope.command(definition)` makes a command that runs (the fields of
+`defineScript` but `name`, `command` and `version`), `scope.group(definition)` a group under a word of its own (its
+`summary`, `options`, `examples`, `aliases` and `commands`). The scope carries the types of the options above it, so a
+command's `run` receives its groups' options and its own, typed; the commands are declared through it because
+TypeScript cannot type them from a plain object. The top adds `name`, `command` and `version`.
+
+- **Options** of a group apply to every command under it and may be given before or after the command words
+  (`radar-kb --project x note add`, `radar-kb note add --project x`); a command's own go after its word. A name
+  declared twice on one path is an error when the tree is defined.
+- **Settings** (`header`, `icon`, `tone`, `json`, `prompts`, `onFailure`) are inherited from the group unless a command
+  sets its own. The header shows the whole path.
+- **A group without a command** is a usage error listing its commands; `--help` at any level prints that level's help
+  (its commands, its options, the inherited ones apart); `--version` works at the top.
+- **Renames**: a group's `aliases` (`{ "old-name": "new-name" }`) keep an old word working, with a note on stderr.
+- **Docs**: the JSON description, Markdown, man page and completions cover the whole tree (bash, zsh and fish complete
+  the command words, then the options of the command they lead to); `cli-kit docs` lists a tree as one script.
 
 ### `log`
 

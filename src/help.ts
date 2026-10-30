@@ -70,7 +70,29 @@ export const positionalLabel = (positional: ScriptPositional): string => {
  * @returns `command [options] <arg> [arg]`.
  */
 export const usageLine = (source: HelpSource): string =>
-  [source.command, "[options]", ...(source.positionals ?? []).map(positionalLabel)].join(" ");
+  [
+    source.command,
+    ...(isGroup(source) ? ["<command>"] : []),
+    "[options]",
+    ...(source.positionals ?? []).map(positionalLabel)
+  ].join(" ");
+
+/**
+ * Whether a help source is a group of commands: it has commands, and runs none of its own.
+ *
+ * @param source - The definition.
+ * @returns Whether the source lists commands.
+ */
+export const isGroup = (source: HelpSource): boolean => (source.commands ?? []).length > 0;
+
+/**
+ * The aliases of a group as one line each: the old name and the command it now is.
+ *
+ * @param source - The group.
+ * @returns The rows, or none.
+ */
+const aliasRows = (source: HelpSource): (readonly [string, string])[] =>
+  Object.entries(source.aliases ?? {}).map(([old, current]) => [old, `now ${current}`] as const);
 
 /** Rows padded into two columns. */
 const twoColumns = (rows: readonly (readonly [string, string])[]): string[] => {
@@ -105,11 +127,21 @@ export const formatHelp = (source: HelpSource, color: boolean): string => {
     );
     lines.push(heading("Arguments"), ...twoColumns(rows), "");
   }
-  const optionRows = Object.entries(source.options).map(
-    ([name, option]) =>
-      [optionLabel(name, option), describe(option.description, optionFacts(option), color)] as const
-  );
-  lines.push(heading("Options"), ...twoColumns(optionRows), "");
+  if (isGroup(source)) {
+    const commandRows = (source.commands ?? []).map((command) => [command.name, command.summary] as const);
+    lines.push(heading("Commands"), ...twoColumns(commandRows), "");
+    const aliases = aliasRows(source);
+    if (aliases.length > 0) lines.push(heading("Renamed"), ...twoColumns(aliases), "");
+  }
+  const optionRows = (options: HelpSource["options"]): (readonly [string, string])[] =>
+    Object.entries(options).map(
+      ([name, option]) =>
+        [optionLabel(name, option), describe(option.description, optionFacts(option), color)] as const
+    );
+  lines.push(heading("Options"), ...twoColumns(optionRows(source.options)), "");
+  if (source.inherited && Object.keys(source.inherited).length > 0) {
+    lines.push(heading("Inherited options"), ...twoColumns(optionRows(source.inherited)), "");
+  }
   if (source.examples && source.examples.length > 0) {
     lines.push(
       heading("Examples"),
@@ -117,6 +149,8 @@ export const formatHelp = (source: HelpSource, color: boolean): string => {
       ""
     );
   }
+  if (isGroup(source))
+    lines.push(paint("muted", `Run ${source.command} <command> --help for a command's options.`, color), "");
   return lines.join("\n");
 };
 
@@ -126,31 +160,87 @@ export const formatHelp = (source: HelpSource, color: boolean): string => {
  * @param source - The script's definition.
  * @returns Markdown, starting with a `###` heading.
  */
-export const formatHelpMarkdown = (source: HelpSource): string => {
-  const lines = [`### \`${source.name}\``, "", escapeMarkdown(source.summary), ""];
-  if (source.description) lines.push(escapeMarkdown(source.description), "");
-  lines.push("```", usageLine(source), "```", "");
-  if (source.positionals && source.positionals.length > 0) {
-    lines.push("| Argument | What it is |", "|---|---|");
-    for (const positional of source.positionals) {
-      const choices = positional.choices ? ` (one of: ${positional.choices.join(", ")})` : "";
-      lines.push(
-        `| \`${positionalLabel(positional)}\` | ${escapeTableCell(`${positional.description}${choices}`)} |`
-      );
-    }
-    lines.push("");
-  }
-  lines.push("| Option | What it does |", "|---|---|");
-  for (const [name, option] of Object.entries(source.options)) {
-    const facts = optionFacts(option);
-    lines.push(
-      `| \`${optionLabel(name, option).trim()}\` | ${escapeTableCell(facts ? `${option.description} ${facts}` : option.description)} |`
-    );
-  }
-  if (source.examples && source.examples.length > 0) {
-    lines.push("", "Examples:", "");
-    for (const example of source.examples)
-      lines.push(`- \`${example.command}\`: ${escapeMarkdown(example.description)}`);
-  }
-  return `${lines.join("\n")}\n`;
+export const formatHelpMarkdown = (source: HelpSource): string => commandMarkdown(source, source.name);
+
+/**
+ * The Markdown of one command, then of each command under it, every one titled by how it is called.
+ *
+ * @param source - The command's definition.
+ * @param title - Its heading: the script's name, or a subcommand's whole command (`radar-kb note add`).
+ * @returns Markdown, starting with a `###` heading.
+ */
+const commandMarkdown = (source: HelpSource, title: string): string => {
+  const lines = [
+    `### \`${title}\``,
+    "",
+    escapeMarkdown(source.summary),
+    "",
+    ...(source.description ? [escapeMarkdown(source.description), ""] : []),
+    "```",
+    usageLine(source),
+    "```",
+    "",
+    ...commandRowsMarkdown(source),
+    ...positionalRowsMarkdown(source),
+    ...optionRowsMarkdown(source),
+    ...(source.examples && source.examples.length > 0
+      ? [
+          "",
+          "Examples:",
+          "",
+          ...source.examples.map(
+            (example) => `- \`${example.command}\`: ${escapeMarkdown(example.description)}`
+          )
+        ]
+      : [])
+  ];
+  const children = (source.commands ?? []).map((command) => commandMarkdown(command, command.command));
+  return [`${lines.join("\n")}\n`, ...children].join("\n");
+};
+
+/** A group's commands and renamed words as a Markdown table; nothing for a command that runs. */
+const commandRowsMarkdown = (source: HelpSource): string[] =>
+  isGroup(source)
+    ? [
+        "| Command | What it does |",
+        "|---|---|",
+        ...(source.commands ?? []).map(
+          (command) => `| \`${command.name}\` | ${escapeTableCell(command.summary)} |`
+        ),
+        ...Object.entries(source.aliases ?? {}).map(
+          ([old, current]) => `| \`${old}\` | ${escapeTableCell(`now ${current}`)} |`
+        ),
+        ""
+      ]
+    : [];
+
+/** The positionals as a Markdown table; nothing without any. */
+const positionalRowsMarkdown = (source: HelpSource): string[] =>
+  source.positionals && source.positionals.length > 0
+    ? [
+        "| Argument | What it is |",
+        "|---|---|",
+        ...source.positionals.map((positional) => {
+          const choices = positional.choices ? ` (one of: ${positional.choices.join(", ")})` : "";
+          return `| \`${positionalLabel(positional)}\` | ${escapeTableCell(`${positional.description}${choices}`)} |`;
+        }),
+        ""
+      ]
+    : [];
+
+/** The options as a Markdown table, the inherited ones last and marked. */
+const optionRowsMarkdown = (source: HelpSource): string[] => {
+  const rows = [
+    ...Object.entries(source.options).map(([name, option]) => [name, option, false] as const),
+    ...Object.entries(source.inherited ?? {}).map(([name, option]) => [name, option, true] as const)
+  ];
+  return [
+    "| Option | What it does |",
+    "|---|---|",
+    ...rows.map(([name, option, isInherited]) => {
+      const facts = [optionFacts(option), isInherited ? "(inherited)" : ""].filter(Boolean).join(" ");
+      const text = facts ? `${option.description} ${facts}` : option.description;
+      return `| \`${optionLabel(name, option).trim()}\` | ${escapeTableCell(text)} |`;
+    })
+  ];
 };

@@ -9,24 +9,18 @@
  *
  * @module
  */
+import { formatTreeCompletion } from "./commandCompletions.ts";
 import type { OptionDescription, ScriptDescription, Shell } from "./docs.types.ts";
-import { optionFacts, optionValueLabel, positionalLabel, usageLine } from "./help.ts";
+import { isGroup, optionFacts, optionValueLabel, positionalLabel, usageLine } from "./help.ts";
 import type { HelpSource } from "./help.types.ts";
 
 /**
- * A script as data, for tools (docs generators, completions, other programs).
+ * Options as data, in their declared order.
  *
- * @param source - The script's definition (`script.source`).
- * @returns The description; absent fields are `null` so the shape is fixed.
+ * @param options - The declarations, by long name.
  */
-export const formatHelpJson = (source: HelpSource): ScriptDescription => ({
-  schema: 1,
-  name: source.name,
-  command: source.command,
-  summary: source.summary,
-  description: source.description ?? null,
-  version: source.version ?? null,
-  options: Object.entries(source.options).map(
+const optionDescriptions = (options: HelpSource["options"]): OptionDescription[] =>
+  Object.entries(options).map(
     ([name, option]): OptionDescription => ({
       name,
       type: option.type,
@@ -41,7 +35,22 @@ export const formatHelpJson = (source: HelpSource): ScriptDescription => ({
       value: option.type === "string" ? (option.value ?? "required") : null,
       impliedValue: option.value === "optional" ? (option.impliedValue ?? "") : null
     })
-  ),
+  );
+
+/**
+ * A script as data, for tools (docs generators, completions, other programs).
+ *
+ * @param source - The script's definition (`script.source`).
+ * @returns The description; absent fields are `null` so the shape is fixed.
+ */
+export const formatHelpJson = (source: HelpSource): ScriptDescription => ({
+  schema: 1,
+  name: source.name,
+  command: source.command,
+  summary: source.summary,
+  description: source.description ?? null,
+  version: source.version ?? null,
+  options: optionDescriptions(source.options),
   positionals: (source.positionals ?? []).map((positional) => ({
     name: positional.name,
     description: positional.description,
@@ -49,7 +58,10 @@ export const formatHelpJson = (source: HelpSource): ScriptDescription => ({
     variadic: positional.variadic ?? false,
     choices: positional.choices ?? null
   })),
-  examples: (source.examples ?? []).map(({ command, description }) => ({ command, description }))
+  examples: (source.examples ?? []).map(({ command, description }) => ({ command, description })),
+  inheritedOptions: optionDescriptions(source.inherited ?? {}),
+  commands: (source.commands ?? []).map(formatHelpJson),
+  aliases: source.aliases ?? {}
 });
 
 /** Escapes text for roff: backslashes, dashes, and a dot or quote at the start of a line. */
@@ -64,9 +76,9 @@ const roff = (text: string): string =>
 /** A `.TP` entry: a bold term and its text. */
 const manEntry = (term: string, text: string): string[] => [".TP", `.B ${roff(term)}`, roff(text)];
 
-/** The OPTIONS section. */
-const manOptions = (source: HelpSource): string[] =>
-  Object.entries(source.options).flatMap(([name, option]) => {
+/** The OPTIONS section's entries: the options given, by long name. */
+const manOptions = (options: HelpSource["options"]): string[] =>
+  Object.entries(options).flatMap(([name, option]) => {
     const flags = [option.short ? `-${option.short}` : "", `--${name}`].filter(Boolean).join(", ");
     const facts = optionFacts(option);
     return manEntry(
@@ -74,6 +86,23 @@ const manOptions = (source: HelpSource): string[] =>
       facts ? `${option.description} ${facts}` : option.description
     );
   });
+
+/**
+ * The COMMANDS section: every command under a group, at any depth, with its usage, summary and own options.
+ *
+ * @param source - The group.
+ */
+const manCommands = (source: HelpSource): string[] =>
+  (source.commands ?? []).flatMap((command) => [
+    `.SS "${roff(command.command)}"`,
+    roff(command.summary),
+    ".PP",
+    roff(usageLine(command)),
+    ...manOptions(
+      Object.fromEntries(Object.entries(command.options).filter(([name]) => !(name in source.options)))
+    ),
+    ...manCommands(command)
+  ]);
 
 /**
  * The man page, in roff (`man ./name.1` shows it).
@@ -93,8 +122,12 @@ export const formatHelpMan = (source: HelpSource): string => {
     ...(source.description ? [".SH DESCRIPTION", roff(source.description)] : []),
     ...(positionals.length > 0 ? [".SH ARGUMENTS"] : []),
     ...positionals.flatMap((positional) => manEntry(positionalLabel(positional), positional.description)),
+    ...(isGroup(source) ? [".SH COMMANDS", ...manCommands(source)] : []),
     ".SH OPTIONS",
-    ...manOptions(source),
+    ...manOptions(source.options),
+    ...(source.inherited && Object.keys(source.inherited).length > 0
+      ? [".SH INHERITED OPTIONS", ...manOptions(source.inherited)]
+      : []),
     ...(examples.length > 0 ? [".SH EXAMPLES"] : []),
     ...examples.flatMap((example) => manEntry(example.command, example.description))
   ];
@@ -198,7 +231,8 @@ const COMPLETIONS: Readonly<Record<Shell, (source: HelpSource, command: string) 
 export const SHELLS: readonly Shell[] = ["bash", "zsh", "fish"];
 
 /**
- * Shell completions for a command: its options, the choices of options and positionals, files for other values.
+ * Shell completions for a command: its options, the choices of options and positionals, files for other values; for a
+ * command made of subcommands, the command words first, then the options of the command they lead to.
  *
  * @param source - The script's definition.
  * @param shell - Which shell.
@@ -206,4 +240,4 @@ export const SHELLS: readonly Shell[] = ["bash", "zsh", "fish"];
  * @returns The completion script, to source or to put in the shell's completion folder.
  */
 export const formatCompletion = (source: HelpSource, shell: Shell, command: string = source.name): string =>
-  COMPLETIONS[shell](source, command);
+  isGroup(source) ? formatTreeCompletion(source, shell, command) : COMPLETIONS[shell](source, command);

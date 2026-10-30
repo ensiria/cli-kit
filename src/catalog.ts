@@ -109,19 +109,15 @@ export const describeScript = (
 };
 
 /**
- * Turns a description back into the source the help formats take.
+ * Options as declarations, from their descriptions.
  *
- * @param description - A script's JSON description.
- * @returns The equivalent help source.
+ * @param options - The described options.
  */
-export const sourceFromDescription = (description: ScriptDescription): HelpSource => ({
-  name: description.name,
-  command: description.command,
-  summary: description.summary,
-  description: description.description ?? undefined,
-  version: description.version ?? undefined,
-  options: Object.fromEntries(
-    description.options.map((option): [string, ScriptOption] => [
+const optionsFromDescriptions = (
+  options: ScriptDescription["options"]
+): Readonly<Record<string, ScriptOption>> =>
+  Object.fromEntries(
+    options.map((option): [string, ScriptOption] => [
       option.name,
       {
         type: option.type,
@@ -137,7 +133,21 @@ export const sourceFromDescription = (description: ScriptDescription): HelpSourc
         impliedValue: option.impliedValue ?? undefined
       }
     ])
-  ),
+  );
+
+/**
+ * Turns a description back into the source the help formats take.
+ *
+ * @param description - A script's JSON description.
+ * @returns The equivalent help source.
+ */
+export const sourceFromDescription = (description: ScriptDescription): HelpSource => ({
+  name: description.name,
+  command: description.command,
+  summary: description.summary,
+  description: description.description ?? undefined,
+  version: description.version ?? undefined,
+  options: optionsFromDescriptions(description.options),
   positionals: description.positionals.map((positional) => ({
     name: positional.name,
     description: positional.description,
@@ -145,7 +155,11 @@ export const sourceFromDescription = (description: ScriptDescription): HelpSourc
     variadic: positional.variadic,
     choices: positional.choices ?? undefined
   })),
-  examples: description.examples
+  examples: description.examples,
+  // a description written before commands existed has none of these
+  inherited: optionsFromDescriptions(description.inheritedOptions ?? []),
+  commands: (description.commands ?? []).map(sourceFromDescription),
+  aliases: description.aliases ?? {}
 });
 
 /**

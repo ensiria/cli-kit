@@ -89,4 +89,13 @@ export interface HelpSource {
   readonly positionals?: readonly ScriptPositional[] | undefined;
   /** Examples. */
   readonly examples?: readonly ScriptExample[] | undefined;
+  /**
+   * For a subcommand: the options of the groups above it, which it accepts too (listed apart, as inherited); none for
+   * a script.
+   */
+  readonly inherited?: Readonly<Record<string, ScriptOption>> | undefined;
+  /** For a group of commands: its commands, each described the same way (`name` is the command word). */
+  readonly commands?: readonly HelpSource[] | undefined;
+  /** For a group of commands: the old names it still accepts, each with the command it now is. */
+  readonly aliases?: Readonly<Record<string, string>> | undefined;
 }
