@@ -54,3 +54,35 @@ export interface CheckRecord {
 
 /** How many checks came out each way. */
 export type CheckCounts = Readonly<Record<CheckStatus, number>>;
+
+/** How `checkProgram` checks a program. */
+export interface ProgramCheckOptions {
+  /** The program, looked for on the `PATH`. */
+  readonly program: string;
+  /** What the report calls it. @defaultValue the program */
+  readonly name?: string | undefined;
+  /** The arguments that print its version. @defaultValue `["--version"]` */
+  readonly args?: readonly string[] | undefined;
+  /** The oldest version that works (`2.39`); none takes any. */
+  readonly minimum?: string | undefined;
+  /** Whether a missing or older program is a failure; `false` makes it a warning. @defaultValue true */
+  readonly isRequired?: boolean | undefined;
+  /** What to do when it is missing or older. */
+  readonly fix?: CheckFix | undefined;
+}
+
+/** A check to run: its name, shown while it runs, and the work that finds out how it comes out. */
+export interface CheckToRun {
+  /** What is checked; also the name of the check it returns when it throws. */
+  readonly name: string;
+  /** Finds out: returns the check (`checkProgram` returns one). */
+  readonly run: () => Check | Promise<Check>;
+}
+
+/** A section of checks to run (`Tools`, `Settings`). */
+export interface CheckGroup {
+  /** The section's title. */
+  readonly title: string;
+  /** Its checks, run in order. */
+  readonly checks: readonly CheckToRun[];
+}

@@ -9,25 +9,43 @@
  *
  * @example
  * ```ts
- * run: async ({ io, style, isJson }) => {
- *   const sections = [{ title: "Tools", checks: [await checkTmux(io)] }];
- *   io.stdout.write(isJson ? formatJson(checksJson(sections)) : checks(sections, style));
- *   const exitCode = checksExitCode(sections);
- *   // the report is printed: the run ends with its code and no other message
- *   if (exitCode !== EXIT.ok) throw new ScriptError("some checks failed", { exitCode, isReported: true });
+ * run: async ({ io, log, style, isJson, onExit }) => {
+ *   const report = await runChecks(
+ *     [{ title: "Tools", checks: [{ name: "git", run: () => checkProgram({ program: "git", minimum: "2.39" }, io) }] }],
+ *     { io, log, onExit }
+ *   );
+ *   reportChecks(report, { io, style, isJson });
  * }
  * ```
  *
  * @module
  */
-import type { Check, CheckCounts, CheckRecord, CheckSection, CheckStatus } from "./checks.types.ts";
+import type {
+  Check,
+  CheckCounts,
+  CheckGroup,
+  CheckRecord,
+  CheckSection,
+  CheckStatus,
+  CheckToRun,
+  ProgramCheckOptions
+} from "./checks.types.ts";
 import { EXIT, SYMBOLS } from "./constants.ts";
+import { exec } from "./exec.ts";
+import { formatJson } from "./files.ts";
 import { plural } from "./format.ts";
 import { glyph } from "./glyphs.ts";
 import type { GlyphName } from "./glyphs.types.ts";
+import type { ScriptIo } from "./io.types.ts";
+import { canAnimate } from "./live.ts";
+import type { LiveTarget } from "./live.types.ts";
 import type { OutputStyle } from "./log.types.ts";
+import { ScriptError } from "./script.ts";
 import { paint } from "./style.ts";
 import type { Tone } from "./style.types.ts";
+import { tasks } from "./tasks.ts";
+import type { TaskHandle } from "./tasks.types.ts";
+import { compareVersions, formatVersion, parseVersion } from "./version.ts";
 
 /** The glyph and tone of each status. */
 const LOOK: Readonly<Record<CheckStatus, { readonly glyph: GlyphName; readonly tone: Tone }>> = {
@@ -124,3 +142,128 @@ export const checksJson = (sections: readonly CheckSection[]): CheckRecord[] =>
  */
 export const checksExitCode = (sections: readonly CheckSection[]): number =>
   checkCounts(sections).fail > 0 ? EXIT.failure : EXIT.ok;
+
+/**
+ * Checks that a program is installed, at a minimum version: runs it with its version arguments and reads the version
+ * it prints.
+ *
+ * @param options - The program, its name in the report, its version arguments, the minimum, whether it is required,
+ * and the fix.
+ * @param io - The script's io (`context.io`): its tests answer instead of real programs.
+ * @returns The check: `ok` with the version; `fail` (or `warn` when not required) when it is missing, older than the
+ * minimum, or prints no version a minimum can be compared with.
+ * @example
+ * ```ts
+ * await checkProgram({ program: "git", minimum: "2.39", fix: { command: "brew install git" } }, io);
+ * ```
+ */
+export const checkProgram = async (options: ProgramCheckOptions, io: ScriptIo): Promise<Check> => {
+  const name = options.name ?? options.program;
+  const problem: CheckStatus = options.isRequired === false ? "warn" : "fail";
+  const withFix = (check: Check): Check =>
+    options.fix === undefined ? check : { ...check, fix: options.fix };
+  let printed: string;
+  try {
+    const result = await exec(options.program, options.args ?? ["--version"], { check: false, io });
+    printed = `${result.stdout}\n${result.stderr}`;
+  } catch {
+    return withFix({ name, status: problem, detail: "not installed, or not on the PATH" });
+  }
+  const version = parseVersion(printed);
+  const found = version === undefined ? (printed.trim().split("\n")[0] ?? "") : formatVersion(version);
+  if (options.minimum === undefined) return { name, status: "ok", detail: found || "installed" };
+  if (version === undefined) {
+    return withFix({ name, status: problem, detail: `prints no version to compare with ${options.minimum}` });
+  }
+  const minimum = parseVersion(options.minimum);
+  if (minimum !== undefined && compareVersions(version, minimum) < 0) {
+    return withFix({ name, status: problem, detail: `${found}, needs ${options.minimum} or later` });
+  }
+  return { name, status: "ok", detail: found };
+};
+
+/**
+ * One check run: what it returns, or a failure saying it could not be checked when it throws, so one broken check
+ * never stops the report.
+ *
+ * @param check - The check to run.
+ */
+const runOne = async (check: CheckToRun): Promise<Check> => {
+  try {
+    return await check.run();
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : String(error);
+    return { name: check.name, status: "fail", detail: `could not be checked: ${reason}` };
+  }
+};
+
+/**
+ * Runs a doctor's checks, section by section, and gathers the report: on a terminal with a live list of what runs
+ * (`tasks()`), silently otherwise, so the report is the only output of a pipe or CI. A check that throws is a failed
+ * check, the others still run.
+ *
+ * @param groups - The sections, each with its checks.
+ * @param target - Where the progress is drawn (the script's `{ io, log, onExit }`).
+ * @returns The report, for `checks()`, `checksJson()` and `checksExitCode()`.
+ * @example
+ * ```ts
+ * const report = await runChecks(
+ *   [{ title: "Tools", checks: [{ name: "git", run: () => checkProgram({ program: "git" }, io) }] }],
+ *   { io, log, onExit }
+ * );
+ * ```
+ */
+export const runChecks = async (
+  groups: readonly CheckGroup[],
+  target: LiveTarget
+): Promise<CheckSection[]> => {
+  const found = groups.map((group) => group.checks.map((): Check | undefined => undefined));
+  if (!canAnimate(target)) {
+    return Promise.all(
+      groups.map(async (group) => ({
+        title: group.title,
+        checks: await Promise.all(group.checks.map(runOne))
+      }))
+    );
+  }
+  await tasks(
+    groups.map((group, groupIndex) => ({
+      title: group.title,
+      children: group.checks.map((check, checkIndex) => ({
+        title: check.name,
+        run: async (task: TaskHandle): Promise<void> => {
+          const result = await runOne(check);
+          task.setDetail(result.detail);
+          const row = found[groupIndex];
+          if (row) row[checkIndex] = result;
+        }
+      }))
+    })),
+    target
+  );
+  return groups.map((group, groupIndex) => ({
+    title: group.title,
+    checks: group.checks.map(
+      (check, checkIndex): Check =>
+        found[groupIndex]?.[checkIndex] ?? { name: check.name, status: "skip", detail: "not run" }
+    )
+  }));
+};
+
+/**
+ * Prints a doctor's report and ends the run with its code: the report (its JSON with `--json`) on stdout, then, when
+ * a check failed, a reported `ScriptError` so the run exits with `EXIT.failure` and prints nothing more.
+ *
+ * @param report - The report (`runChecks` gives it).
+ * @param context - The script's io, style and `--json` mode.
+ * @throws A `ScriptError` already reported when a check failed.
+ */
+export const reportChecks = (
+  report: readonly CheckSection[],
+  context: { readonly io: ScriptIo; readonly style: OutputStyle; readonly isJson: boolean }
+): void => {
+  context.io.stdout.write(context.isJson ? formatJson(checksJson(report)) : checks(report, context.style));
+  const exitCode = checksExitCode(report);
+  if (exitCode !== EXIT.ok)
+    throw new ScriptError(`${checkCounts(report).fail} checks failed`, { exitCode, isReported: true });
+};
