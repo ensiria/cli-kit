@@ -309,6 +309,24 @@ On `Intl`, English by default, a locale as the last argument: `formatDuration(ms
 `formatBytes(bytes)` (decimal: `1.2 kB`), `formatCount(n, { compact? })`, `formatRelativeTime(moment, now)`
 (`5 minutes ago`), `plural(count, singular, pluralForm?)` (`3 files`).
 
+## Doctor reports
+
+`checks(sections, style)` renders a doctor command's report: named checks grouped in sections, one line each with its
+status's glyph and tone (`ok`, `warn`, `fail`, `skip`), what to do under the ones that are not fine (a `hint`, or a
+`command` to run), and a summary line (`12 ok, 1 warning, 1 problem`). `checksJson(sections)` is the same data as an
+array for `--json`; `checksExitCode(sections)` is `EXIT.failure` when a check failed (warnings never fail);
+`checkCounts(sections)` counts each status. The checks themselves run in the script, with `tasks()` for the live
+progress:
+
+```ts
+run: async ({ io, style, isJson }) => {
+  const sections = [{ title: "Tools", checks: [await checkTmux(io)] }];
+  io.stdout.write(isJson ? formatJson(checksJson(sections)) : checks(sections, style));
+  const exitCode = checksExitCode(sections);
+  if (exitCode !== EXIT.ok) throw new ScriptError("some checks failed", { exitCode, isReported: true });
+}
+```
+
 ## Live feedback
 
 Live output is drawn on **stderr** (stdout keeps results and `--json`), animated only on an interactive terminal
