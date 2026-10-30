@@ -60,7 +60,8 @@
     "test": "vitest run",
     "lint": "biome ci . && eslint .",
     "format": "biome check --write .",
-    "prepack": "pnpm build"
+    "prepack": "pnpm build",
+    "checks": "pnpm typecheck && pnpm lint && pnpm test && pnpm build"
   },
   "devDependencies": {
     "@biomejs/biome": "2.6.2",
