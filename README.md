@@ -313,21 +313,50 @@ On `Intl`, English by default, a locale as the last argument: `formatDuration(ms
 
 ## Doctor reports
 
-`checks(sections, style)` renders a doctor command's report: named checks grouped in sections, one line each with its
-status's glyph and tone (`ok`, `warn`, `fail`, `skip`), what to do under the ones that are not fine (a `hint`, or a
-`command` to run), and a summary line (`12 ok, 1 warning, 1 problem`). `checksJson(sections)` is the same data as an
-array for `--json`; `checksExitCode(sections)` is `EXIT.failure` when a check failed (warnings never fail);
-`checkCounts(sections)` counts each status. The checks themselves run in the script, with `tasks()` for the live
-progress:
+A doctor command checks its tools and setup and prints a report whose exit code fails only when a check failed:
 
 ```ts
-run: async ({ io, style, isJson }) => {
-  const sections = [{ title: "Tools", checks: [await checkTmux(io)] }];
-  io.stdout.write(isJson ? formatJson(checksJson(sections)) : checks(sections, style));
-  const exitCode = checksExitCode(sections);
-  if (exitCode !== EXIT.ok) throw new ScriptError("some checks failed", { exitCode, isReported: true });
+import { checkProgram, reportChecks, runChecks } from "@ensiria/cli-kit/checks";
+
+run: async ({ io, log, style, isJson, onExit }) => {
+  const report = await runChecks(
+    [
+      {
+        title: "Tools",
+        checks: [
+          { name: "git", run: () => checkProgram({ program: "git", minimum: "2.39", fix: { command: "brew install git" } }, io) },
+          { name: "pnpm", run: () => checkProgram({ program: "pnpm", isRequired: false }, io) }
+        ]
+      }
+    ],
+    { io, log, onExit }
+  );
+  reportChecks(report, { io, style, isJson });
 }
 ```
+
+| Export | What it is |
+|---|---|
+| `checkProgram({ program, name?, args?, minimum?, isRequired?, fix? }, io)` | Runs a program with its version arguments (`--version` by default) and reads the version it prints: `ok` with the version, `fail` (or `warn` when not required) when it is missing, older than `minimum`, or prints no version to compare |
+| `runChecks(groups, { io, log, onExit })` | Runs the checks by section: a live list on a terminal, nothing in a pipe; a check that throws is a failed check and the others still run |
+| `reportChecks(report, { io, style, isJson })` | Prints the report (its JSON with `--json`) and ends the run with `EXIT.failure` when a check failed, with no other message |
+| `checks(report, style)` / `checksJson(report)` | The report as text (a line per check with its status's glyph and tone, what to do under the ones that are not fine, a summary line) or as data |
+| `checksExitCode(report)` / `checkCounts(report)` | `EXIT.failure` when a check failed (warnings never fail); how many of each status |
+
+A check is `{ name, status, detail, fix? }`: `status` is `ok`, `warn`, `fail` or `skip`; `fix` is `{ hint }` or a
+`{ command }` to run.
+
+### `version`
+
+`parseVersion(text)` reads the first version in what a program prints (`git version 2.39.5 (Apple Git-154)`,
+`v22.18.0`; a missing patch is 0, a prerelease kept); `compareVersions(left, right)` orders two (a prerelease before
+its release); `isAtLeast(version, minimum)` says whether one is a minimum or later; `formatVersion` writes one back.
+
+### `generated`
+
+`writeGenerated(path, content, { isCheck, command, cwd? })` is what every generator does: writes the file only when
+its content changed (`"written"` or `"unchanged"`), or, with `isCheck` (`--check` in CI), compares without writing and
+fails when it is missing or out of date, with `command` as the hint.
 
 ## Live feedback
 
@@ -377,6 +406,11 @@ npx cli-kit man <script>
 A new script built on the kit is added to `scripts.json`, then `cli-kit docs` is run; CI runs the check.
 
 ## Gallery
+
+Three small commands in `examples/`, each in its folder with its logic tested apart and a README: `notes` (commands
+in groups, an inherited option, an alias, number options, a value from stdin or a file, a schema, tables in the terminal
+and in Markdown), `doctor` (`runChecks`, `checkProgram`, `reportChecks`) and `release-notes` (`exec`, `writeGenerated`,
+`formatTable`). `node examples/<name>/<name>.mts --help` shows each one's usage.
 
 `node examples/gallery.ts [sections...]` prints every helper; try it with `| cat`, `--no-color`
 and `CLI_KIT_ASCII=1`.
