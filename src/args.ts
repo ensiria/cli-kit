@@ -13,7 +13,6 @@ import { parseArgs } from "node:util";
 
 import type { ScriptOption, ScriptPositional } from "./help.types.ts";
 import type { ScriptIo } from "./io.types.ts";
-import type { OptionValues, PositionalValues } from "./script.types.ts";
 
 /**
  * A command line that does not match the declarations: the runner reports it as a usage error (`EXIT.usage`), with the
@@ -87,6 +86,8 @@ export const checkOptions = (name: string, options: Readonly<Record<string, Scri
     if (option.type === "string" && typeof option.default === "number") {
       throw new Error(`${label} is a string option: its default is a string`);
     }
+    if (option.schema && option.type !== "string")
+      throw new Error(`${label} is not a string option: a schema checks a string`);
   }
 };
 
@@ -351,25 +352,24 @@ const checkPresent = (name: string, option: ScriptOption, value: OptionValueAtRu
   );
 };
 
-/** The script's own option values, typed from their declarations. */
-export const ownValues = <TOptions extends Readonly<Record<string, ScriptOption>>>(
+/**
+ * The script's own option values by name, from the command line, the environment and the defaults, before their
+ * schemas check them (`schema.ts`).
+ */
+export const optionValues = (
   declared: Readonly<Record<string, ScriptOption>>,
   values: ParsedArgs["values"],
   env: ScriptIo["env"]
-): OptionValues<TOptions> => {
-  const entries = Object.entries(declared).map(([name, option]) => [
-    name,
-    optionValue(name, option, values[name], env)
-  ]);
-  // built at runtime from the declarations, so its shape is what OptionValues<TOptions> describes
-  return Object.fromEntries(entries) as OptionValues<TOptions>;
-};
+): Readonly<Record<string, unknown>> =>
+  Object.fromEntries(
+    Object.entries(declared).map(([name, option]) => [name, optionValue(name, option, values[name], env)])
+  );
 
-/** The positional values by name, after checking count and choices. */
-export const positionalValues = <TPositionals extends readonly ScriptPositional[]>(
+/** The positional values by name, after checking count and choices, before their schemas check them. */
+export const positionalValues = (
   declared: readonly ScriptPositional[],
   given: readonly string[]
-): PositionalValues<TPositionals> => {
+): Readonly<Record<string, unknown>> => {
   const last = declared.at(-1);
   if (!(last?.variadic || last?.raw) && given.length > declared.length) {
     const extra = given.slice(declared.length).join(" ");
@@ -384,6 +384,5 @@ export const positionalValues = <TPositionals extends readonly ScriptPositional[
     checkChoices(`<${positional.name}>`, value, positional.choices);
     return [positional.name, value];
   });
-  // built at runtime from the declarations, so its shape is what PositionalValues<TPositionals> describes
-  return Object.fromEntries(entries) as PositionalValues<TPositionals>;
+  return Object.fromEntries(entries);
 };

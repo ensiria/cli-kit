@@ -15,7 +15,7 @@ import {
   ArgumentError,
   flag,
   messageOf,
-  ownValues,
+  optionValues,
   type ParsedArgs,
   parseCommandLine,
   positionalValues,
@@ -32,6 +32,7 @@ import type { ScriptOption, ScriptPositional } from "./help.types.ts";
 import type { ScriptIo } from "./io.types.ts";
 import { createLogger } from "./log.ts";
 import type { Logger } from "./log.types.ts";
+import { checkedValues } from "./schema.ts";
 import { ScriptError, usageError } from "./script.ts";
 import type { ScriptContext } from "./script.types.ts";
 import { supportsColor } from "./style.ts";
@@ -239,24 +240,29 @@ const execute = async <
     };
   };
   const work = async (): Promise<number> => {
-    let context: ScriptContext<TOptions, TPositionals>;
+    let values: Pick<ScriptContext<TOptions, TPositionals>, "options" | "args">;
     try {
-      context = {
-        options: ownValues<TOptions>(target.options, parsed.values, io.env),
-        args: positionalValues<TPositionals>(target.positionals, parsed.positionals),
-        positionals: parsed.positionals,
-        path: target.path,
-        log,
-        style: log.style,
-        io,
-        isJson,
-        isYes: flag(parsed.values["yes"]),
-        onInterrupt,
-        onExit: hooks.add
-      };
+      values = await checkedValues<TOptions, TPositionals>(
+        target.options,
+        optionValues(target.options, parsed.values, io.env),
+        target.positionals,
+        positionalValues(target.positionals, parsed.positionals)
+      );
     } catch (error) {
       throw asUsageError(error);
     }
+    const context: ScriptContext<TOptions, TPositionals> = {
+      ...values,
+      positionals: parsed.positionals,
+      path: target.path,
+      log,
+      style: log.style,
+      io,
+      isJson,
+      isYes: flag(parsed.values["yes"]),
+      onInterrupt,
+      onExit: hooks.add
+    };
     const result = await target.run(context);
     if (isJson && result !== undefined) io.stdout.write(formatJson(result));
     return EXIT.ok;

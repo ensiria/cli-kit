@@ -4,6 +4,7 @@
  *
  * @module
  */
+import type { StandardSchemaV1 } from "./standardSchema.types.ts";
 
 /** One option a script accepts. */
 export interface ScriptOption {
@@ -50,6 +51,12 @@ export interface ScriptOption {
   readonly value?: "required" | "optional" | undefined;
   /** The value of an option with an optional value when it is given alone (`--color` → `"auto"`). @defaultValue "" */
   readonly impliedValue?: string | undefined;
+  /**
+   * A validator for a string option's value (each one, with `multiple`), any that implements Standard Schema (zod,
+   * valibot, arktype): what it gives becomes the value `run` receives, typed; its issues are a usage error naming the
+   * option. Checked, awaited when async, before `run`; an option without a value is not checked.
+   */
+  readonly schema?: StandardSchemaV1<string, unknown> | undefined;
 }
 
 /** A positional argument. */
@@ -70,6 +77,11 @@ export interface ScriptPositional {
   readonly raw?: boolean | undefined;
   /** The only values it accepts; shell completions offer them. */
   readonly choices?: readonly string[] | undefined;
+  /**
+   * A validator for its value (each one, when variadic), any that implements Standard Schema: what it gives becomes
+   * the value in `args`, typed; its issues are a usage error naming the argument.
+   */
+  readonly schema?: StandardSchemaV1<string, unknown> | undefined;
 }
 
 /** One example in the help. */

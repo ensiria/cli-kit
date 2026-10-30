@@ -9,14 +9,19 @@ import type { GlyphName } from "./glyphs.types.ts";
 import type { HelpSource, ScriptExample, ScriptOption, ScriptPositional } from "./help.types.ts";
 import type { ScriptIo } from "./io.types.ts";
 import type { Logger, OutputStyle } from "./log.types.ts";
+import type { StandardSchemaOutput, StandardSchemaV1 } from "./standardSchema.types.ts";
 import type { Tone } from "./style.types.ts";
 
-/** The value of a string option: one of its `choices` when it has them. */
-type StringValue<TOption extends ScriptOption> = TOption extends {
-  choices: readonly (infer TChoice extends string)[];
+/** The value of a string option: what its schema gives, or one of its `choices` when it has them. */
+type StringValue<TOption extends ScriptOption | ScriptPositional> = TOption extends {
+  schema: infer TSchema extends StandardSchemaV1<string, unknown>;
 }
-  ? TChoice
-  : string;
+  ? StandardSchemaOutput<TSchema>
+  : TOption extends {
+        choices: readonly (infer TChoice extends string)[];
+      }
+    ? TChoice
+    : string;
 
 /** The value a parsed option has, from its declaration: booleans default to false, strings may be absent. */
 export type OptionValue<TOption extends ScriptOption> = TOption extends { type: "boolean" }
@@ -41,15 +46,13 @@ export type OptionValues<TOptions extends Readonly<Record<string, ScriptOption>>
 };
 
 /** The value of a positional argument, from its declaration. */
-type PositionalValue<TPositional extends ScriptPositional> = TPositional extends
-  | { variadic: true }
-  | { raw: true }
+type PositionalValue<TPositional extends ScriptPositional> = TPositional extends { raw: true }
   ? string[]
-  : TPositional extends { required: true }
-    ? TPositional extends { choices: readonly (infer TChoice extends string)[] }
-      ? TChoice
-      : string
-    : string | undefined;
+  : TPositional extends { variadic: true }
+    ? StringValue<TPositional>[]
+    : TPositional extends { required: true }
+      ? StringValue<TPositional>
+      : StringValue<TPositional> | undefined;
 
 /** Positional argument values by name, typed from their declarations. */
 export type PositionalValues<TPositionals extends readonly ScriptPositional[]> = {

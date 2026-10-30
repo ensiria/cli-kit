@@ -92,6 +92,24 @@ Values are typed from the declarations: a boolean is `boolean`; a string is `str
 array. A number option's `env` value is read as a number too (and split on commas with `multiple`). Positionals arrive by name in `args`
 (`string` when required, `string | undefined` when not, `string[]` when variadic or raw).
 
+A string option or a positional may have a `schema`: any validator that implements
+[Standard Schema](https://standardschema.dev) (zod 4, valibot, arktype; the kit declares the interface as a type and
+depends on none of them). Its value (each one, for a list) goes through the schema before `run`, async ones awaited;
+what the schema gives is the value `run` receives, typed from the schema, so a schema may parse as it checks; its
+issues are a usage error naming the option and each issue's path:
+
+```ts
+options: {
+  body: {
+    type: "string",
+    required: true,
+    description: "The note, as JSON.",
+    schema: z.string().transform((text) => JSON.parse(text)).pipe(z.object({ title: z.string() }))
+  }
+},
+run: ({ options }) => options.body.title // string
+```
+
 Rules between options (one needs or excludes another) stay in `run`, checked by hand and thrown as `usageError`, so
 they print like every other usage error (exit 2, "Run … --help"):
 
