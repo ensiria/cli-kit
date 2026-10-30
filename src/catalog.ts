@@ -129,6 +129,7 @@ const optionsFromDescriptions = (
         min: option.min ?? undefined,
         max: option.max ?? undefined,
         integer: option.integer ?? undefined,
+        valueFrom: option.valueFrom ?? undefined,
         choices: option.choices ?? undefined,
         env: option.env ?? undefined,
         required: option.required,
@@ -156,6 +157,7 @@ export const sourceFromDescription = (description: ScriptDescription): HelpSourc
     description: positional.description,
     required: positional.required,
     variadic: positional.variadic,
+    valueFrom: positional.valueFrom ?? undefined,
     choices: positional.choices ?? undefined
   })),
   examples: description.examples,

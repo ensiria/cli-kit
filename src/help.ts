@@ -20,18 +20,21 @@ import { paint } from "./style.ts";
  */
 export const optionValueLabel = (option: ScriptOption): string => {
   if (option.type === "boolean") return "";
-  const name = option.valueName ?? defaultValueName(option);
+  const name = `${option.valueName ?? defaultValueName(option)}${option.valueFrom ? "|-|@file" : ""}`;
   return option.value === "optional" ? `[=<${name}>]` : ` <${name}>`;
 };
 
 /**
- * The placeholder of an option's value when it names none: `number` for a number option, `value` otherwise.
+ * The placeholder of an option's value when it names none: `number` for a number option, `text` for one read with
+ * `valueFrom`, `value` otherwise.
  *
  * @param option - The declaration.
  * @returns The placeholder.
  */
-export const defaultValueName = (option: ScriptOption): string =>
-  option.type === "number" ? "number" : "value";
+export const defaultValueName = (option: ScriptOption): string => {
+  if (option.type === "number") return "number";
+  return option.valueFrom ? "text" : "value";
+};
 
 /**
  * A number option's range as the help shows it: `0-600`, `at least 0`, `at most 600`, and `whole number`.
@@ -84,7 +87,8 @@ export const optionFacts = (option: ScriptOption): string => {
  * @returns The usage token.
  */
 export const positionalLabel = (positional: ScriptPositional): string => {
-  const name = positional.variadic || positional.raw ? `${positional.name}...` : positional.name;
+  const own = positional.valueFrom ? `${positional.name}|-|@file` : positional.name;
+  const name = positional.variadic || positional.raw ? `${own}...` : own;
   return positional.required ? `<${name}>` : `[${name}]`;
 };
 

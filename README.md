@@ -110,6 +110,11 @@ options: {
 run: ({ options }) => options.body.title // string
 ```
 
+`valueFrom: true` on a string option or a positional lets its value come from elsewhere: `-` reads what is piped into
+stdin, `@path` reads that file (UTF-8, from the working folder), `@@text` is the text `@text`, anything else is taken as
+written. It is read before `run` and before the schema (a schema checks what was read); a missing file, `-` with
+nothing piped in, or stdin asked twice is a usage error. The help says it: `--body <text|-|@file>`.
+
 Rules between options (one needs or excludes another) stay in `run`, checked by hand and thrown as `usageError`, so
 they print like every other usage error (exit 2, "Run … --help"):
 

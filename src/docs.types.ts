@@ -30,6 +30,8 @@ export interface OptionDescription {
   readonly max: number | null;
   /** Whether a number option takes whole numbers only. */
   readonly integer: boolean;
+  /** Whether the value may come from stdin (`-`) or a file (`@path`). */
+  readonly valueFrom: boolean;
   /** Accepted values. */
   readonly choices: readonly string[] | null;
   /** Environment variable read when it is not given. */
@@ -44,6 +46,8 @@ export interface OptionDescription {
 
 /** One positional argument in a script's description. */
 export interface PositionalDescription {
+  /** Whether the value may come from stdin (`-`) or a file (`@path`). */
+  readonly valueFrom: boolean;
   /** Its name. */
   readonly name: string;
   /** What it is. */

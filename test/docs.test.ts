@@ -44,6 +44,7 @@ describe("formatHelpJson", () => {
       min: null,
       max: null,
       integer: false,
+      valueFrom: false,
       choices: ["dev", "prod"],
       env: null,
       required: false,
@@ -53,7 +54,14 @@ describe("formatHelpJson", () => {
     expect(json.options[1]).toMatchObject({ value: "optional", impliedValue: "auto" });
     expect(json.options[3]).toMatchObject({ type: "boolean", valueName: null, value: null });
     expect(json.positionals).toEqual([
-      { name: "mode", description: "Mode.", required: true, variadic: false, choices: ["fast", "safe"] }
+      {
+        name: "mode",
+        description: "Mode.",
+        required: true,
+        variadic: false,
+        valueFrom: false,
+        choices: ["fast", "safe"]
+      }
     ]);
   });
 });

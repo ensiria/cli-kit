@@ -37,6 +37,7 @@ import { ScriptError, usageError } from "./script.ts";
 import type { ScriptContext } from "./script.types.ts";
 import { supportsColor } from "./style.ts";
 import type { Tone } from "./style.types.ts";
+import { readValues } from "./valueFrom.ts";
 
 /** The options every script accepts. */
 export const COMMON_OPTIONS: Readonly<Record<string, ScriptOption>> = {
@@ -242,11 +243,18 @@ const execute = async <
   const work = async (): Promise<number> => {
     let values: Pick<ScriptContext<TOptions, TPositionals>, "options" | "args">;
     try {
-      values = await checkedValues<TOptions, TPositionals>(
+      const read = await readValues(
         target.options,
         optionValues(target.options, parsed.values, io.env),
         target.positionals,
-        positionalValues(target.positionals, parsed.positionals)
+        positionalValues(target.positionals, parsed.positionals),
+        io
+      );
+      values = await checkedValues<TOptions, TPositionals>(
+        target.options,
+        read.options,
+        target.positionals,
+        read.args
       );
     } catch (error) {
       throw asUsageError(error);

@@ -57,6 +57,13 @@ export interface ScriptOption {
    * option. Checked, awaited when async, before `run`; an option without a value is not checked.
    */
   readonly schema?: StandardSchemaV1<string, unknown> | undefined;
+  /**
+   * Whether a string option's value may come from elsewhere: `-` reads stdin to its end, `@path` reads that file
+   * (UTF-8, from the working folder), `@@text` is the text `@text`; anything else is taken as written. Read before
+   * `run` (and before the schema); a missing file, or `-` with nothing piped in, is a usage error.
+   * @defaultValue false
+   */
+  readonly valueFrom?: boolean | undefined;
 }
 
 /** A positional argument. */
@@ -82,6 +89,8 @@ export interface ScriptPositional {
    * the value in `args`, typed; its issues are a usage error naming the argument.
    */
   readonly schema?: StandardSchemaV1<string, unknown> | undefined;
+  /** Whether its value may come from stdin (`-`) or a file (`@path`), as an option's `valueFrom`. @defaultValue false */
+  readonly valueFrom?: boolean | undefined;
 }
 
 /** One example in the help. */

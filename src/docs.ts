@@ -46,6 +46,7 @@ const optionDescription = (name: string, option: HelpSource["options"][string]):
   min: option.min ?? null,
   max: option.max ?? null,
   integer: option.integer ?? false,
+  valueFrom: option.valueFrom ?? false,
   choices: option.choices ?? null,
   env: option.env ?? null,
   required: option.required ?? false
@@ -87,6 +88,7 @@ export const formatHelpJson = (source: HelpSource): ScriptDescription => ({
     description: positional.description,
     required: positional.required ?? false,
     variadic: positional.variadic ?? false,
+    valueFrom: positional.valueFrom ?? false,
     choices: positional.choices ?? null
   })),
   examples: (source.examples ?? []).map(({ command, description }) => ({ command, description })),
