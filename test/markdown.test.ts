@@ -6,10 +6,13 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  codeSpan,
   escapeMarkdown,
   escapeTableCell,
   findTable,
+  formatTable,
   formatTableRow,
+  markdownText,
   readSection,
   replaceSection,
   splitTableRow
@@ -91,5 +94,69 @@ describe("sections", () => {
 
   it("finds a heading on the first line", () => {
     expect(readSection("## A\n\nbody\n", "## A")).toBe("\nbody\n");
+  });
+});
+
+describe("formatTable", () => {
+  const columns = [
+    { key: "name", title: "Name" },
+    { key: "count", title: "Count", align: "right" },
+    { key: "state", title: "State", align: "center" }
+  ] as const;
+  const rows = [
+    { name: "Ada", count: 3, state: "ok" },
+    { name: "Bob | Eve", count: 12, state: "" }
+  ];
+
+  it("writes a compact table by default: titles, the alignments, a line per row, plain text escaped", () => {
+    expect(formatTable(columns, rows)).toBe(
+      ["| Name | Count | State |", "|---|---:|:---:|", "| Ada | 3 | ok |", "| Bob \\| Eve | 12 | |"].join(
+        "\n"
+      )
+    );
+  });
+
+  it("pads every column to its widest cell when asked, the colons at the cells' edges", () => {
+    expect(formatTable(columns, rows, { isPadded: true })).toBe(
+      [
+        "| Name       | Count | State |",
+        "|------------|------:|:-----:|",
+        "| Ada        |     3 |  ok   |",
+        "| Bob \\| Eve |    12 |       |"
+      ].join("\n")
+    );
+  });
+
+  it("puts Markdown cells as they are, only their | escaped, and reads back with findTable", () => {
+    const table = formatTable(
+      [
+        { key: "option", title: "Option" },
+        { key: "does", title: "What it does" }
+      ],
+      [
+        { option: codeSpan("--format <a|b>"), does: "Pick a format." },
+        { option: markdownText("[docs](https://example.com)"), does: "<see>" }
+      ]
+    );
+    expect(table).toBe(
+      [
+        "| Option | What it does |",
+        "|---|---|",
+        "| `--format <a\\|b>` | Pick a format. |",
+        "| [docs](https://example.com) | \\<see\\> |"
+      ].join("\n")
+    );
+    expect(findTable(table, (header) => header[0] === "Option")?.rows[0]).toEqual([
+      "`--format <a\\|b>`",
+      "Pick a format."
+    ]);
+  });
+});
+
+describe("codeSpan", () => {
+  it("fences the code with more backticks than it holds, spaced when it starts or ends with one", () => {
+    expect(codeSpan("--json").markdown).toBe("`--json`");
+    expect(codeSpan("a `b` c").markdown).toBe("``a `b` c``");
+    expect(codeSpan("`tick").markdown).toBe("`` `tick ``");
   });
 });

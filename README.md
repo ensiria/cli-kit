@@ -260,6 +260,8 @@ For generators that keep a Markdown file in sync with data and leave the prose a
 
 | Export | What it is |
 |---|---|
+| `formatTable(columns, rows, { isPadded? })` | A table from data: `columns` are `{ key, title, align? }` (`left`, `center`, `right`), each row a cell per key (plain text, escaped; a number; or Markdown from `codeSpan` / `markdownText`, only its `\|` escaped). Compact by default (`\| a \| b \|`, so editing a cell changes one line of a diff); `isPadded` aligns the columns for reading the file as text |
+| `codeSpan(text)` / `markdownText(markdown)` | A cell that is Markdown already: inline code (fenced with enough backticks), or anything written (a link); `.markdown` for prose |
 | `findTable(text, isHeader)` | The first table whose header matches: `{ header, rows, firstRow, end }` (line indexes) |
 | `splitTableRow(line)` / `formatTableRow(cells)` | A table line to trimmed cells (escaped `\|` kept) and back |
 | `readSection(text, heading)` / `replaceSection(text, heading, body)` | A section's body, up to the next heading of the same level or higher |

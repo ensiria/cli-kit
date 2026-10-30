@@ -9,7 +9,7 @@
  * @module
  */
 import type { HelpSource, ScriptOption, ScriptPositional } from "./help.types.ts";
-import { escapeMarkdown, escapeTableCell } from "./markdown.ts";
+import { codeSpan, escapeMarkdown, formatTable } from "./markdown.ts";
 import { paint } from "./style.ts";
 
 /**
@@ -231,13 +231,21 @@ const commandMarkdown = (source: HelpSource, title: string): string => {
 const commandRowsMarkdown = (source: HelpSource): string[] =>
   isGroup(source)
     ? [
-        "| Command | What it does |",
-        "|---|---|",
-        ...(source.commands ?? []).map(
-          (command) => `| \`${command.name}\` | ${escapeTableCell(command.summary)} |`
-        ),
-        ...Object.entries(source.aliases ?? {}).map(
-          ([old, current]) => `| \`${old}\` | ${escapeTableCell(`now ${current}`)} |`
+        formatTable(
+          [
+            { key: "command", title: "Command" },
+            { key: "does", title: "What it does" }
+          ],
+          [
+            ...(source.commands ?? []).map((command) => ({
+              command: codeSpan(command.name),
+              does: command.summary
+            })),
+            ...Object.entries(source.aliases ?? {}).map(([old, current]) => ({
+              command: codeSpan(old),
+              does: `now ${current}`
+            }))
+          ]
         ),
         ""
       ]
@@ -247,12 +255,16 @@ const commandRowsMarkdown = (source: HelpSource): string[] =>
 const positionalRowsMarkdown = (source: HelpSource): string[] =>
   source.positionals && source.positionals.length > 0
     ? [
-        "| Argument | What it is |",
-        "|---|---|",
-        ...source.positionals.map((positional) => {
-          const choices = positional.choices ? ` (one of: ${positional.choices.join(", ")})` : "";
-          return `| \`${positionalLabel(positional)}\` | ${escapeTableCell(`${positional.description}${choices}`)} |`;
-        }),
+        formatTable(
+          [
+            { key: "argument", title: "Argument" },
+            { key: "is", title: "What it is" }
+          ],
+          source.positionals.map((positional) => ({
+            argument: codeSpan(positionalLabel(positional)),
+            is: `${positional.description}${positional.choices ? ` (one of: ${positional.choices.join(", ")})` : ""}`
+          }))
+        ),
         ""
       ]
     : [];
@@ -264,12 +276,18 @@ const optionRowsMarkdown = (source: HelpSource): string[] => {
     ...Object.entries(source.inherited ?? {}).map(([name, option]) => [name, option, true] as const)
   ];
   return [
-    "| Option | What it does |",
-    "|---|---|",
-    ...rows.map(([name, option, isInherited]) => {
-      const facts = [optionFacts(option), isInherited ? "(inherited)" : ""].filter(Boolean).join(" ");
-      const text = facts ? `${option.description} ${facts}` : option.description;
-      return `| \`${optionLabel(name, option).trim()}\` | ${escapeTableCell(text)} |`;
-    })
+    formatTable(
+      [
+        { key: "option", title: "Option" },
+        { key: "does", title: "What it does" }
+      ],
+      rows.map(([name, option, isInherited]) => {
+        const facts = [optionFacts(option), isInherited ? "(inherited)" : ""].filter(Boolean).join(" ");
+        return {
+          option: codeSpan(optionLabel(name, option).trim()),
+          does: facts ? `${option.description} ${facts}` : option.description
+        };
+      })
+    )
   ];
 };

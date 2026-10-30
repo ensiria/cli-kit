@@ -15,7 +15,14 @@ import type { GlyphName } from "../src/glyphs.types.ts";
 import { header } from "../src/header.ts";
 import { box, columns, keyValue, list, table, tree } from "../src/layout.ts";
 import type { Logger } from "../src/log.types.ts";
-import { escapeTableCell, findTable, formatTableRow, replaceSection } from "../src/markdown.ts";
+import {
+  codeSpan,
+  escapeTableCell,
+  findTable,
+  formatTable,
+  formatTableRow,
+  replaceSection
+} from "../src/markdown.ts";
 import { progress } from "../src/progress.ts";
 import { confirm, multiselect, select, text } from "../src/prompts.ts";
 import { defineScript } from "../src/script.ts";
@@ -262,9 +269,37 @@ const SECTIONS: Readonly<Record<string, GallerySection>> = {
     }
   },
   markdown: {
-    title: "Markdown: findTable, formatTableRow, escapeTableCell, replaceSection",
+    title: "Markdown: formatTable, codeSpan, findTable, formatTableRow, replaceSection",
     print: (log) => {
-      const doc = "## Rows\n\n| # | Name |\n|---|---|\n| 1 | b |\n| 2 | a |\n\n## Counts\n\nold\n";
+      const columns = [
+        { key: "number", title: "#", align: "right" },
+        { key: "name", title: "Name" }
+      ] as const;
+      log.plain(
+        formatTable(
+          [...columns, { key: "flag", title: "Flag" }],
+          [
+            { number: 1, name: "Ada | Lovelace", flag: codeSpan("--loud") },
+            { number: 12, name: "Grace", flag: "" }
+          ],
+          { isPadded: true }
+        )
+      );
+      log.plain("");
+      // a file with a table and a section of prose: the table is reordered, the section rewritten, the rest kept
+      const doc = [
+        "## Rows",
+        "",
+        formatTable(columns, [
+          { number: 1, name: "b" },
+          { number: 2, name: "a" }
+        ]),
+        "",
+        "## Counts",
+        "",
+        "old",
+        ""
+      ].join("\n");
       const table = findTable(doc, (header) => header[0] === "#");
       const rows = [...(table?.rows ?? [])].sort((x, y) => (x[1] ?? "").localeCompare(y[1] ?? ""));
       const lines = doc.split("\n");

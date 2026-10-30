@@ -1,5 +1,6 @@
 /**
- * Markdown read and written by scripts: table rows, a table found by its header, a section's body, and escaping.
+ * Markdown read and written by scripts: a table formatted from data, table rows, a table found by its header, a
+ * section's body, and escaping.
  *
  * @remarks
  * For the generators and checks that keep a Markdown file in sync with data (`BUILD-ORDER.md`, `docs/scripts.md`,
@@ -8,7 +9,15 @@
  *
  * @module
  */
-import type { MarkdownTable } from "./markdown.types.ts";
+import type {
+  MarkdownTable,
+  MarkdownText,
+  TableAlign,
+  TableCell,
+  TableColumn,
+  TableOptions
+} from "./markdown.types.ts";
+import { width } from "./text.ts";
 
 /**
  * Escapes text for Markdown prose: `<` and `>` would be read as HTML.
@@ -118,4 +127,96 @@ export const replaceSection = (text: string, heading: string, body: string): str
   const bounds = sectionBounds(text, heading);
   if (!bounds) throw new Error(`section "${heading}" not found`);
   return `${text.slice(0, bounds.start)}\n${body}${text.slice(bounds.end)}`;
+};
+
+/**
+ * Markdown written already, for a table cell that must not be escaped (a link, emphasis).
+ *
+ * @param markdown - The Markdown.
+ * @returns The cell.
+ */
+export const markdownText = (markdown: string): MarkdownText => ({ markdown });
+
+/**
+ * Text as inline code: between backticks, as many as it takes to hold the backticks inside it.
+ *
+ * @param text - The code (`--project <value>`).
+ * @returns The code span, for a table cell; its `.markdown` for prose.
+ */
+export const codeSpan = (text: string): MarkdownText => {
+  const longestRun = Math.max(0, ...(text.match(/`+/g) ?? []).map((run) => run.length));
+  const fence = "`".repeat(longestRun + 1);
+  // a space keeps a backtick at either end from joining the fence
+  const padding = text.startsWith("`") || text.endsWith("`") ? " " : "";
+  return { markdown: `${fence}${padding}${text}${padding}${fence}` };
+};
+
+/** A cell as written in the table: plain text escaped, Markdown with only its `|` escaped. */
+const cellText = (cell: TableCell): string => {
+  if (typeof cell === "number") return String(cell);
+  if (typeof cell === "string") return escapeTableCell(cell);
+  return cell.markdown.replace(/(?<!\\)\|/g, "\\|");
+};
+
+/**
+ * A column's separator cell: dashes, with a colon at the end for a right column and at both ends for a centred one.
+ *
+ * @param align - The column's alignment.
+ * @param length - The cell's length, colons included; three dashes at least.
+ */
+const separatorCell = (align: TableAlign, length: number): string => {
+  const colons = { left: 0, center: 2, right: 1 }[align];
+  const dashes = "-".repeat(Math.max(3, length - colons));
+  if (align === "center") return `:${dashes}:`;
+  return align === "right" ? `${dashes}:` : dashes;
+};
+
+/** A cell padded to its column's width, as its alignment says. */
+const paddedCell = (text: string, align: TableAlign, columnWidth: number): string => {
+  const space = Math.max(0, columnWidth - width(text));
+  if (align === "right") return `${" ".repeat(space)}${text}`;
+  if (align === "center")
+    return `${" ".repeat(Math.floor(space / 2))}${text}${" ".repeat(Math.ceil(space / 2))}`;
+  return `${text}${" ".repeat(space)}`;
+};
+
+/**
+ * A Markdown table from data: the columns' titles, the separator with their alignments, then a line per row, every
+ * cell escaped unless it is Markdown already (`codeSpan`, `markdownText`).
+ *
+ * @param columns - The columns, in order: each cell's key in the rows, the title, the alignment.
+ * @param rows - The rows, each a cell per column's key.
+ * @param options - Whether the columns are padded to their widest cell. @defaultValue compact
+ * @returns The table's lines, joined by newlines, with no newline at the end.
+ * @example
+ * ```ts
+ * formatTable(
+ *   [{ key: "option", title: "Option" }, { key: "does", title: "What it does" }],
+ *   [{ option: codeSpan("--json"), does: "Print the result as JSON." }]
+ * );
+ * // | Option | What it does |
+ * // |---|---|
+ * // | `--json` | Print the result as JSON. |
+ * ```
+ */
+export const formatTable = <TKey extends string>(
+  columns: readonly TableColumn<TKey>[],
+  rows: readonly Readonly<Record<TKey, TableCell>>[],
+  options: TableOptions = {}
+): string => {
+  const titles = columns.map((column) => escapeTableCell(column.title));
+  const body = rows.map((row) => columns.map((column) => cellText(row[column.key])));
+  const aligns = columns.map((column) => column.align ?? "left");
+  if (!options.isPadded) {
+    const separator = `|${aligns.map((align) => separatorCell(align, 0)).join("|")}|`;
+    return [formatTableRow(titles), separator, ...body.map(formatTableRow)].join("\n");
+  }
+  const widths = columns.map((_column, index) =>
+    Math.max(3, ...[titles, ...body].map((cells) => width(cells[index] ?? "")))
+  );
+  const padded = (cells: readonly string[]): string =>
+    formatTableRow(cells.map((cell, index) => paddedCell(cell, aligns[index] ?? "left", widths[index] ?? 3)));
+  // the separator spans the cells' padding too, so its colons sit at the cell's edges
+  const separator = `|${aligns.map((align, index) => separatorCell(align, (widths[index] ?? 3) + 2)).join("|")}|`;
+  return [padded(titles), separator, ...body.map(padded)].join("\n");
 };

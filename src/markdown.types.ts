@@ -15,3 +15,35 @@ export interface MarkdownTable {
   /** Index of the first line after the last body row. */
   readonly end: number;
 }
+
+/** How a column's cells sit in it. */
+export type TableAlign = "left" | "center" | "right";
+
+/** A column of a table to format: the key of its cells in each row, its title, its alignment. */
+export interface TableColumn<TKey extends string> {
+  /** The key of the column's cell in each row. */
+  readonly key: TKey;
+  /** The column's title, plain text. */
+  readonly title: string;
+  /** How its cells sit. @defaultValue "left" */
+  readonly align?: TableAlign | undefined;
+}
+
+/** Text that is Markdown already (a code span, a link): put in a table as it is, only its `|` escaped. */
+export interface MarkdownText {
+  /** The Markdown. */
+  readonly markdown: string;
+}
+
+/** A cell: plain text (escaped), a number, or Markdown already written. */
+export type TableCell = string | number | MarkdownText;
+
+/** How a table is laid out. */
+export interface TableOptions {
+  /**
+   * Whether every column is padded to its widest cell, for reading the file as text. Off, a table is compact
+   * (`| a | b |`), so editing one cell changes one line in a diff.
+   * @defaultValue false
+   */
+  readonly isPadded?: boolean | undefined;
+}

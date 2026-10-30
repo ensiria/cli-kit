@@ -20,7 +20,7 @@ import type { ScriptDescription } from "./docs.types.ts";
 import { readJson } from "./files.ts";
 import { formatHelpMarkdown } from "./help.ts";
 import type { HelpSource, ScriptOption } from "./help.types.ts";
-import { escapeTableCell } from "./markdown.ts";
+import { codeSpan, formatTable, markdownText } from "./markdown.ts";
 
 /** The catalogue's file name, at the repo root. */
 export const CATALOG_FILE = "scripts.json";
@@ -181,11 +181,17 @@ export const formatScriptsMarkdown = (scripts: readonly CatalogScript[]): string
     "",
     `Every script built on \`@ensiria/cli-kit\` and listed in \`${CATALOG_FILE}\`, as its \`--help\` describes it.`,
     "",
-    "| Script | What it does | File |",
-    "|---|---|---|",
-    ...scripts.map(
-      ({ entry, description }) =>
-        `| [\`${description.name}\`](#${description.name}) | ${escapeTableCell(description.summary)} | \`${entry.path}\` |`
+    formatTable(
+      [
+        { key: "script", title: "Script" },
+        { key: "does", title: "What it does" },
+        { key: "file", title: "File" }
+      ],
+      scripts.map(({ entry, description }) => ({
+        script: markdownText(`[${codeSpan(description.name).markdown}](#${description.name})`),
+        does: description.summary,
+        file: codeSpan(entry.path)
+      }))
     ),
     ""
   ];
