@@ -412,5 +412,9 @@ Merging `develop` into `main` releases the package (`.github/workflows/release.y
 last release (while the version is 0.x, a breaking change bumps the minor and a feature or a fix the patch, so
 `^0.1.0` gets features and fixes, never a break), `CHANGELOG.md` and the GitHub release are written, the release
 commit and its `v<version>` tag go to `main`, the package is published to npm with provenance through trusted
-publishing (no token), and the release commit goes back to `develop`. The first release is started by hand from the
-Actions tab with its version (`0.1.0`).
+publishing (no token), and the release commit goes back to `develop`.
+
+The first release is published by hand, since npm can trust a workflow only for a package that already exists: from
+`main`, signed in to npm (`npm login`, with 2FA) and to GitHub (`GITHUB_TOKEN=$(gh auth token)`), run
+`pnpm nx release 0.1.0 --first-release`. Then, on npmjs.com, the package's settings add the trusted publisher
+(GitHub Actions, `Ensiria/cli-kit`, workflow `release.yml`), and every later release is the workflow's.

@@ -1,7 +1,8 @@
 # Releases the package when develop is merged into main: the version from the conventional commits since the last
 # release (in 0.x a breaking change bumps the minor, a feature or a fix the patch), the changelog, the release commit
 # and its tag, the GitHub release, then npm with provenance through trusted publishing (no token). The release commit
-# then goes back to develop. The first release is started by hand with its version (0.1.0).
+# then goes back to develop. The first release is published by hand (npm cannot trust a workflow for a package that
+# does not exist yet): see the README; this workflow takes every release after it.
 name: release
 
 on:
@@ -10,7 +11,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: "An explicit version, for the first release (0.1.0); empty takes it from the commits"
+        description: "An explicit version (when the commits do not say it); empty takes it from the commits"
         required: false
         type: string
 
@@ -52,7 +53,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           if [ -n "$VERSION" ]; then
-            pnpm nx release "$VERSION" --first-release --yes
+            pnpm nx release "$VERSION" --yes
           else
             pnpm nx release --yes
           fi
