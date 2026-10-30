@@ -1,0 +1,54 @@
+{
+  "name": "@ensiria/cli-kit",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Helpers and constants for scripts and command-line tools that all look and behave the same: typed options and generated help, output and formatting helpers, spinners, progress, task lists, prompts, man pages and completions, and test helpers.",
+  "keywords": [
+    "cli",
+    "command-line",
+    "terminal",
+    "script",
+    "parseArgs",
+    "spinner",
+    "progress",
+    "prompts",
+    "table",
+    "completions"
+  ],
+  "license": "MIT",
+  "author": "Jason Scoppetta",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/JasonScoppetta/dev-tooling.git",
+    "directory": "packages/cli-kit"
+  },
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    "./*": "./src/*.ts"
+  },
+  "bin": {
+    "cli-kit": "./bin/cli-kit.ts"
+  },
+  "files": [
+    "src",
+    "bin",
+    "README.md",
+    "LICENSE"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc -p ."
+  },
+  "devDependencies": {
+    "@radar/typescript-config": "workspace:*",
+    "@types/node": "24.19.2",
+    "vitest": "5.0.5"
+  }
+}

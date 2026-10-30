@@ -1,0 +1,9 @@
+// @ensiria/cli-kit runs on Node with its types stripped, so relative imports carry the `.ts` extension.
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "extends": "../../config/typescript/node.json",
+  "compilerOptions": {
+    "allowImportingTsExtensions": true
+  },
+  "include": ["src/**/*.ts", "test/**/*.ts", "examples/**/*.ts", "bin/**/*.ts"]
+}
