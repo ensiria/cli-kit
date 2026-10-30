@@ -61,6 +61,11 @@ export interface ScriptContext<
   readonly args: PositionalValues<TPositionals>;
   /** Positional arguments as given, in order. */
   readonly positionals: readonly string[];
+  /**
+   * The command words the command was called through (`["note", "add"]` for `radar-kb note add`), for logs; empty for
+   * a script of `defineScript`.
+   */
+  readonly path: readonly string[];
   /** The logger, already set to the common options (`--quiet`, `--verbose`, `--no-color`, `--json`). */
   readonly log: Logger;
   /** How text is drawn on stdout (colour, Unicode, width), for the rendering helpers. */
