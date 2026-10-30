@@ -10,12 +10,12 @@
  * @module
  */
 import type {
+  MarkdownAlign,
+  MarkdownCell,
+  MarkdownColumn,
   MarkdownTable,
-  MarkdownText,
-  TableAlign,
-  TableCell,
-  TableColumn,
-  TableOptions
+  MarkdownTableOptions,
+  MarkdownText
 } from "./markdown.types.ts";
 import { width } from "./text.ts";
 
@@ -152,7 +152,7 @@ export const codeSpan = (text: string): MarkdownText => {
 };
 
 /** A cell as written in the table: plain text escaped, Markdown with only its `|` escaped. */
-const cellText = (cell: TableCell): string => {
+const cellText = (cell: MarkdownCell): string => {
   if (typeof cell === "number") return String(cell);
   if (typeof cell === "string") return escapeTableCell(cell);
   return cell.markdown.replace(/(?<!\\)\|/g, "\\|");
@@ -164,7 +164,7 @@ const cellText = (cell: TableCell): string => {
  * @param align - The column's alignment.
  * @param length - The cell's length, colons included; three dashes at least.
  */
-const separatorCell = (align: TableAlign, length: number): string => {
+const separatorCell = (align: MarkdownAlign, length: number): string => {
   const colons = { left: 0, center: 2, right: 1 }[align];
   const dashes = "-".repeat(Math.max(3, length - colons));
   if (align === "center") return `:${dashes}:`;
@@ -172,7 +172,7 @@ const separatorCell = (align: TableAlign, length: number): string => {
 };
 
 /** A cell padded to its column's width, as its alignment says. */
-const paddedCell = (text: string, align: TableAlign, columnWidth: number): string => {
+const paddedCell = (text: string, align: MarkdownAlign, columnWidth: number): string => {
   const space = Math.max(0, columnWidth - width(text));
   if (align === "right") return `${" ".repeat(space)}${text}`;
   if (align === "center")
@@ -200,9 +200,9 @@ const paddedCell = (text: string, align: TableAlign, columnWidth: number): strin
  * ```
  */
 export const formatTable = <TKey extends string>(
-  columns: readonly TableColumn<TKey>[],
-  rows: readonly Readonly<Record<TKey, TableCell>>[],
-  options: TableOptions = {}
+  columns: readonly MarkdownColumn<TKey>[],
+  rows: readonly Readonly<Record<TKey, MarkdownCell>>[],
+  options: MarkdownTableOptions = {}
 ): string => {
   const titles = columns.map((column) => escapeTableCell(column.title));
   const body = rows.map((row) => columns.map((column) => cellText(row[column.key])));
