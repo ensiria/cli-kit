@@ -1,0 +1,27 @@
+# Dependabot keeps the dependencies and the pinned Actions up to date, once a week, each kind in one pull request to
+# develop; security fixes come as soon as they are known.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    target-branch: develop
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: chore
+      include: scope
+    groups:
+      development:
+        dependency-type: development
+      production:
+        dependency-type: production
+  - package-ecosystem: github-actions
+    directory: /
+    target-branch: develop
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: ci
+    groups:
+      actions:
+        patterns: ["*"]

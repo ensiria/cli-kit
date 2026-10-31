@@ -435,6 +435,7 @@ expect(run.stdout).toContain("valid");
 pnpm test                                    # Vitest
 pnpm typecheck                               # types, tests included
 pnpm checks                                  # everything the CI runs: types, lint, tests, build
+node tools/check-commits/check-commits.mts --from origin/main   # the commits the release will read
 ```
 
 Work goes to `develop`; `main` is what is released. Commits follow
@@ -453,4 +454,5 @@ publishing (no token), and the release commit goes back to `develop`.
 The first release is published by hand, since npm can trust a workflow only for a package that already exists: from
 `main`, signed in to npm (`npm login`, with 2FA) and to GitHub (`GITHUB_TOKEN=$(gh auth token)`), run
 `pnpm nx release 0.1.0 --first-release`. Then, on npmjs.com, the package's settings add the trusted publisher
-(GitHub Actions, `Ensiria/cli-kit`, workflow `release.yml`), and every later release is the workflow's.
+(GitHub Actions, `Ensiria/cli-kit`, workflow `release.yml`, environment `npm`) and require 2FA with tokens disallowed,
+so nothing else can publish; every later release is the workflow's.
