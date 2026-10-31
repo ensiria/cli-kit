@@ -16,13 +16,13 @@
   ],
   "license": "MIT",
   "author": "Jason Scoppetta",
-  "homepage": "https://github.com/Ensiria/cli-kit#readme",
+  "homepage": "https://github.com/ensiria/cli-kit#readme",
   "bugs": {
-    "url": "https://github.com/Ensiria/cli-kit/issues"
+    "url": "https://github.com/ensiria/cli-kit/issues"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Ensiria/cli-kit.git"
+    "url": "git+https://github.com/ensiria/cli-kit.git"
   },
   "type": "module",
   "sideEffects": false,

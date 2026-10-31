@@ -7,7 +7,7 @@ see [SECURITY.md](SECURITY.md).
 
 ## Questions, bugs and proposals
 
-- **A question** (how do I…, is this the right helper for…): [Discussions](https://github.com/Ensiria/cli-kit/discussions).
+- **A question** (how do I…, is this the right helper for…): [Discussions](https://github.com/ensiria/cli-kit/discussions).
 - **A bug**: an issue with the bug form. The version, the Node version, the package manager and a few lines that show
   it are what make it fixable.
 - **A new helper or option**: an issue with the proposal form, before any code. The kit stays small on purpose, so
@@ -88,5 +88,5 @@ The package must come out of `npm pack` ready to run: `exports` and `bin` name t
 The first release is published by hand, since npm can trust a workflow only for a package that already exists: from
 `main`, signed in to npm (`npm login`, with 2FA) and to GitHub (`GITHUB_TOKEN=$(gh auth token)`), run
 `pnpm nx release 0.1.0 --first-release`. Then, on npmjs.com, the package's settings add the trusted publisher
-(GitHub Actions, `Ensiria/cli-kit`, workflow `release.yml`, environment `npm`, `npm publish` not allowed, so it can
+(GitHub Actions, `ensiria/cli-kit`, workflow `release.yml`, environment `npm`, `npm publish` not allowed, so it can
 only stage) and require 2FA with tokens disallowed, so nothing else can publish.

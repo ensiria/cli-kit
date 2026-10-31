@@ -1,8 +1,8 @@
 blank_issues_enabled: false
 contact_links:
   - name: Question
-    url: https://github.com/Ensiria/cli-kit/discussions
+    url: https://github.com/ensiria/cli-kit/discussions
     about: How to use the kit, which helper fits a case.
   - name: Security problem
-    url: https://github.com/Ensiria/cli-kit/security/advisories/new
+    url: https://github.com/ensiria/cli-kit/security/advisories/new
     about: Report it privately, never in a public issue.

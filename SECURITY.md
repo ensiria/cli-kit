@@ -3,7 +3,7 @@
 ## Reporting a vulnerability
 
 Report it privately, never in a public issue: on GitHub, **Security** › **Report a vulnerability**
-(<https://github.com/Ensiria/cli-kit/security/advisories/new>). A fix is released as soon as it is ready, and you are
+(<https://github.com/ensiria/cli-kit/security/advisories/new>). A fix is released as soon as it is ready, and you are
 credited unless you ask not to be.
 
 ## Supported versions
