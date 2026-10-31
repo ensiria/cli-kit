@@ -1,6 +1,6 @@
 {
   "name": "@ensiria/cli-kit",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Helpers and constants for scripts and command-line tools that all look and behave the same: typed options and generated help, output and formatting helpers, spinners, progress, task lists, prompts, man pages and completions, and test helpers.",
   "keywords": [
     "cli",
