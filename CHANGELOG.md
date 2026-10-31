@@ -1,3 +1,13 @@
+## 0.1.1 (2026-10-31)
+
+### 🩹 Fixes
+
+- point exports and bin at dist ([7bddfbe](https://github.com/Ensiria/cli-kit/commit/7bddfbe))
+
+### ❤️ Thank You
+
+- JasonScoppetta @JasonScoppetta
+
 ## 0.1.0 (2026-10-31)
 
 ### 🚀 Features
