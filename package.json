@@ -27,10 +27,13 @@
   "type": "module",
   "sideEffects": false,
   "exports": {
-    "./*": "./src/*.ts"
+    "./*": {
+      "types": "./dist/src/*.d.ts",
+      "default": "./dist/src/*.js"
+    }
   },
   "bin": {
-    "cli-kit": "./bin/cli-kit.ts"
+    "cli-kit": "dist/bin/cli-kit.js"
   },
   "files": [
     "dist",
@@ -39,16 +42,7 @@
     "LICENSE"
   ],
   "publishConfig": {
-    "access": "public",
-    "exports": {
-      "./*": {
-        "types": "./dist/src/*.d.ts",
-        "default": "./dist/src/*.js"
-      }
-    },
-    "bin": {
-      "cli-kit": "./dist/bin/cli-kit.js"
-    }
+    "access": "public"
   },
   "engines": {
     "node": ">=22.18"
