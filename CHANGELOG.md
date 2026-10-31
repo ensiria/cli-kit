@@ -1,3 +1,13 @@
+## 0.1.2 (2026-10-31)
+
+### 🩹 Fixes
+
+- point the repository URLs at the ensiria organisation ([9852b59](https://github.com/ensiria/cli-kit/commit/9852b59))
+
+### ❤️ Thank You
+
+- JasonScoppetta @JasonScoppetta
+
 ## 0.1.1 (2026-10-31)
 
 ### 🩹 Fixes
