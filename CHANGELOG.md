@@ -1,3 +1,14 @@
+## 0.1.3 (2026-10-31)
+
+### 🩹 Fixes
+
+- take a negative number after a number option ([ee1d22c](https://github.com/ensiria/cli-kit/commit/ee1d22c))
+- declare @types/node as an optional peer ([d9f2c46](https://github.com/ensiria/cli-kit/commit/d9f2c46))
+
+### ❤️ Thank You
+
+- JasonScoppetta @JasonScoppetta
+
 ## 0.1.2 (2026-10-31)
 
 ### 🩹 Fixes

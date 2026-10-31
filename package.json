@@ -1,6 +1,6 @@
 {
   "name": "@ensiria/cli-kit",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Write a Node script's definition once and get the parser, the help, completions and man pages, and the tools for its output: logs, tables, spinners, prompts, and a fake terminal for tests.",
   "keywords": [
     "cli",
