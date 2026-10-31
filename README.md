@@ -7,8 +7,8 @@ logs, tables, spinners, progress bars, prompts, and a fake terminal for tests.
 > **Status:** 0.x, early. Its author's tools run on it; the API may still change between minor versions, and every
 > change is in the [changelog](CHANGELOG.md).
 
-**Requirements:** Node 22.18 or later · ES modules, which CommonJS code can load with `require()` · types included ·
-no runtime dependencies · npm, pnpm, yarn (PnP too) or bun · [MIT licence](LICENSE)
+**Requirements:** Node 22.18 or later · ES modules, which CommonJS code can load with `require()` · types included,
+on Node's (`@types/node`) · no runtime dependencies · npm, pnpm, yarn (PnP too) or bun · [MIT licence](LICENSE)
 
 ## Install
 

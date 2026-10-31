@@ -47,6 +47,14 @@
   "engines": {
     "node": ">=22.18"
   },
+  "peerDependencies": {
+    "@types/node": ">=22"
+  },
+  "peerDependenciesMeta": {
+    "@types/node": {
+      "optional": true
+    }
+  },
   "packageManager": "pnpm@10.19.0",
   "scripts": {
     "build": "rm -rf dist && tsc -p tsconfig.build.json",
