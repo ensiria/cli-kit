@@ -1,6 +1,8 @@
 # @ensiria/cli-kit
 
-Write a Node script's definition once and get the parser, the help, completions and man pages, and the tools for its output: logs, tables, spinners, prompts, and a fake terminal for tests.
+Stop rewriting argument parsing, help, colours and Ctrl+C handling in every Node script: write the definition once.
+One package gives you the parser, the help, completions and man pages, and the tools for what the script prints:
+logs, tables, spinners, progress bars, prompts, and a fake terminal for tests.
 
 > **Status:** 0.x, early. Its author's tools run on it; the API may still change between minor versions, and every
 > change is in the [changelog](CHANGELOG.md).
