@@ -54,6 +54,28 @@ describe("number options", () => {
     ]);
   });
 
+  it("takes a negative number as the value after the option, and checks it against the range", async () => {
+    seen.length = 0;
+    const below = await runScript(wait, ["--timeout", "-1"]);
+    expect(below.exitCode).toBe(EXIT.usage);
+    expect(below.stderr).toContain("--timeout");
+    expect(below.stderr).toContain("must be between 0 and 600 (got -1)");
+    expect(below.stderr).not.toContain("ambiguous");
+    const shift = defineScript({
+      name: "shift",
+      command: "shift",
+      summary: "Shift a value.",
+      header: false,
+      options: { by: { type: "number", short: "b", description: "How far." } },
+      run: ({ options }) => {
+        seen.push(options.by);
+      }
+    });
+    expect((await runScript(shift, ["--by", "-3"])).exitCode).toBe(EXIT.ok);
+    expect((await runScript(shift, ["-b", "-0.5"])).exitCode).toBe(EXIT.ok);
+    expect(seen).toEqual([-3, -0.5]);
+  });
+
   it("reads the environment variable as a number, and names it when it is wrong", async () => {
     seen.length = 0;
     await runScript(wait, [], { env: { WAIT_TIMEOUT: "60" } });

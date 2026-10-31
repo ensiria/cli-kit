@@ -194,6 +194,40 @@ const fillImpliedValues = (
   return argv.map((token, index) => ((end < 0 || index < end) && bare.get(token)) || token);
 };
 
+/** A token that is a negative number (`-1`, `-0.5`, `-.5`), not an option. */
+const NEGATIVE_NUMBER = /^-(\d|\.\d)/;
+
+/**
+ * Joins a number option and a negative value given after it (`--offset -3`, `-o -3`) into one token
+ * (`--offset=-3`), so `parseArgs`, which reads a token starting with `-` as an option and calls the value ambiguous,
+ * gives the value to the option, and its range is checked like any other. Stops at `--`.
+ */
+const attachNegativeNumbers = (
+  argv: readonly string[],
+  options: Readonly<Record<string, ScriptOption>>
+): string[] => {
+  const numberTokens = new Map<string, string>();
+  for (const [name, option] of Object.entries(options)) {
+    if (option.type !== "number") continue;
+    numberTokens.set(`--${name}`, `--${name}`);
+    if (option.short) numberTokens.set(`-${option.short}`, `--${name}`);
+  }
+  const joined: string[] = [];
+  for (let index = 0; index < argv.length; index++) {
+    const token = argv[index] ?? "";
+    if (token === "--") return [...joined, ...argv.slice(index)];
+    const long = numberTokens.get(token);
+    const next = argv[index + 1];
+    if (long !== undefined && next !== undefined && NEGATIVE_NUMBER.test(next)) {
+      joined.push(`${long}=${next}`);
+      index++;
+      continue;
+    }
+    joined.push(token);
+  }
+  return joined;
+};
+
 /** Checks the positional declarations: required ones first, a variadic one only last. */
 export const checkPositionals = (name: string, positionals: readonly ScriptPositional[]): void => {
   positionals.forEach((positional, index) => {
@@ -252,7 +286,7 @@ export const parseCommandLine = (
   options: Readonly<Record<string, ScriptOption>>
 ): ParsedArgs =>
   parseArgs({
-    args: fillImpliedValues(argv, options),
+    args: attachNegativeNumbers(fillImpliedValues(argv, options), options),
     allowPositionals: true,
     strict: true,
     options: Object.fromEntries(
