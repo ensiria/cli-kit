@@ -1,0 +1,33 @@
+name: Proposal
+description: A new helper, option or behaviour.
+labels: [proposal]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        The kit stays small and has no runtime dependency, so a proposal starts here and the code follows once the
+        shape is agreed.
+  - type: textarea
+    id: problem
+    attributes:
+      label: The problem
+      description: What a script needs to do today, and what it costs without the kit's help.
+    validations:
+      required: true
+  - type: textarea
+    id: shape
+    attributes:
+      label: The shape you have in mind
+      description: How a script would call it.
+      render: ts
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: What you tried instead
+      description: Existing helpers, other libraries, code in your script.
+  - type: checkboxes
+    id: contribute
+    attributes:
+      label: Contributing
+      options:
+        - label: I would like to write the pull request once the shape is agreed.

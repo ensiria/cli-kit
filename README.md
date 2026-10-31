@@ -440,7 +440,8 @@ node tools/check-commits/check-commits.mts --from origin/main   # the commits th
 
 Work goes to `develop`; `main` is what is released. Commits follow
 [Conventional Commits](https://www.conventionalcommits.org) (`feat:`, `fix:`, `feat!:` or a `BREAKING CHANGE:` footer),
-since the version comes from them.
+since the version comes from them. How to report a bug, propose a helper or send a pull request:
+[CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Releasing
 

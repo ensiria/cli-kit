@@ -1,0 +1,50 @@
+name: Bug report
+description: Something in the kit does not work as its documentation says.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report. A security problem goes through **Security › Report a vulnerability**, never here.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happens
+      description: What you see, and what you expected instead.
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: How to reproduce it
+      description: The smallest script that shows it, and the command you run.
+      render: ts
+    validations:
+      required: true
+  - type: input
+    id: kit-version
+    attributes:
+      label: cli-kit version
+      placeholder: "0.1.1"
+    validations:
+      required: true
+  - type: input
+    id: node-version
+    attributes:
+      label: Node version
+      placeholder: "24.15.0"
+    validations:
+      required: true
+  - type: dropdown
+    id: package-manager
+    attributes:
+      label: Package manager
+      options: [npm, pnpm, yarn, bun, other]
+    validations:
+      required: true
+  - type: input
+    id: terminal
+    attributes:
+      label: Operating system and terminal
+      description: Output, colours and prompts depend on them.
+      placeholder: "macOS 26, Ghostty"

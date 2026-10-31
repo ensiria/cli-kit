@@ -13,6 +13,7 @@ The latest release. While the package is 0.x, fixes go into the next release onl
 ## What the package does to keep you safe
 
 - It has no runtime dependency.
-- It is published from GitHub Actions through npm's trusted publishing, with a provenance statement: `npm view
-  @ensiria/cli-kit --json` shows it, and `npm audit signatures` verifies it.
+- It is built and staged from GitHub Actions through npm's trusted publishing, with a provenance statement, and a
+  version goes public only when a maintainer approves it with 2FA: the workflow alone cannot publish. `npm view
+  @ensiria/cli-kit --json` shows the provenance, and `npm audit signatures` verifies it.
 - `exec()` never runs a shell: arguments are an array, never a string a shell would read.
