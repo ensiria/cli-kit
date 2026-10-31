@@ -56,9 +56,9 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           if [ -n "$VERSION" ]; then
-            pnpm nx release "$VERSION" --skip-publish --yes
+            pnpm nx release "$VERSION" --skip-publish
           else
-            pnpm nx release --skip-publish --yes
+            pnpm nx release --skip-publish
           fi
       # commits that release nothing (docs, ci, chore) leave main untagged: then there is no new version to stage
       - name: Find the new version
