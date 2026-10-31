@@ -1,7 +1,7 @@
 {
   "name": "@ensiria/cli-kit",
   "version": "0.1.1",
-  "description": "Helpers and constants for scripts and command-line tools that all look and behave the same: typed options and generated help, output and formatting helpers, spinners, progress, task lists, prompts, man pages and completions, and test helpers.",
+  "description": "Write a Node script's definition once and get the parser, the help, completions and man pages, and the tools for its output: logs, tables, spinners, prompts, and a fake terminal for tests.",
   "keywords": [
     "cli",
     "command-line",
