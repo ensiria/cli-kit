@@ -1,8 +1,9 @@
 # Releases the package when develop is merged into main: the version from the conventional commits since the last
 # release (in 0.x a breaking change bumps the minor, a feature or a fix the patch), the changelog, the release commit
-# and its tag, the GitHub release, then npm with provenance through trusted publishing (no token). The release commit
-# then goes back to develop. The first release is published by hand (npm cannot trust a workflow for a package that
-# does not exist yet): see the README; this workflow takes every release after it.
+# and its tag, the GitHub release, then the package staged on npm with provenance through trusted publishing (no
+# token). A staged version is public only once a maintainer approves it with 2FA (`npm stage approve`), so this
+# workflow alone cannot put a version in front of users. The release commit then goes back to develop. The first
+# release was published by hand (npm cannot trust a workflow for a package that does not exist yet): see the README.
 name: release
 
 on:
@@ -46,19 +47,27 @@ jobs:
       - run: npm install --global npm@latest
       - run: pnpm install --frozen-lockfile
       - run: pnpm checks
+      # the version, the changelog, the release commit, its tag and the GitHub release; npm is the next step
       - name: Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_CONFIG_PROVENANCE: "true"
           VERSION: ${{ inputs.version }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           if [ -n "$VERSION" ]; then
-            pnpm nx release "$VERSION" --yes
+            pnpm nx release "$VERSION" --skip-publish --yes
           else
-            pnpm nx release --yes
+            pnpm nx release --skip-publish --yes
           fi
+      # commits that release nothing (docs, ci, chore) leave main untagged: then there is no new version to stage
+      - name: Find the new version
+        id: tag
+        run: echo "name=$(git tag --points-at HEAD 'v*')" >> "$GITHUB_OUTPUT"
+      # the trust relationship allows staging only: the version waits on npm for `npm stage approve`
+      - name: Stage on npm
+        if: ${{ steps.tag.outputs.name != '' }}
+        run: npm stage publish --provenance
       - name: Bring the release commit back to develop
         run: |
           git fetch origin develop

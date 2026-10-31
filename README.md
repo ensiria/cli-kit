@@ -448,11 +448,22 @@ Merging `develop` into `main` releases the package (`.github/workflows/release.y
 [Nx release](https://nx.dev/features/manage-releases)): the checks run, the version comes from the commits since the
 last release (while the version is 0.x, a breaking change bumps the minor and a feature or a fix the patch, so
 `^0.1.0` gets features and fixes, never a break), `CHANGELOG.md` and the GitHub release are written, the release
-commit and its `v<version>` tag go to `main`, the package is published to npm with provenance through trusted
-publishing (no token), and the release commit goes back to `develop`.
+commit and its `v<version>` tag go to `main`, the package is staged on npm with provenance through trusted publishing
+(no token), and the release commit goes back to `develop`.
+
+A staged version is not public yet: npm trusts the workflow to stage only, so a maintainer approves each version with
+2FA, which keeps a compromised workflow from shipping one on its own:
+
+```sh
+npm stage list @ensiria/cli-kit   # the versions waiting, with their ids
+npm stage approve <stage-id>      # 2FA, then the version is public
+```
+
+The package must come out of `npm pack` ready to run: `exports` and `bin` name the compiled files in `dist/` (built by
+`prepack`), never the TypeScript sources, which Node does not run inside `node_modules`.
 
 The first release is published by hand, since npm can trust a workflow only for a package that already exists: from
 `main`, signed in to npm (`npm login`, with 2FA) and to GitHub (`GITHUB_TOKEN=$(gh auth token)`), run
 `pnpm nx release 0.1.0 --first-release`. Then, on npmjs.com, the package's settings add the trusted publisher
-(GitHub Actions, `Ensiria/cli-kit`, workflow `release.yml`, environment `npm`) and require 2FA with tokens disallowed,
-so nothing else can publish; every later release is the workflow's.
+(GitHub Actions, `Ensiria/cli-kit`, workflow `release.yml`, environment `npm`, `npm publish` not allowed, so it can
+only stage) and require 2FA with tokens disallowed, so nothing else can publish.
