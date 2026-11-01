@@ -9,7 +9,6 @@ import { readFileSync } from "node:fs";
 
 import { exec } from "../../src/exec.ts";
 import { defineScript, ScriptError } from "../../src/script.ts";
-
 import { internalReferences } from "./internalRefs.ts";
 
 /**

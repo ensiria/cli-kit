@@ -7,7 +7,6 @@
  */
 import { exec } from "../../src/exec.ts";
 import { defineScript, ScriptError } from "../../src/script.ts";
-
 import { messageProblem } from "./commitMessages.ts";
 
 /** What git writes for a commit that does not exist: a new branch's `before`. */

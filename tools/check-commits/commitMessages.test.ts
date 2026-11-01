@@ -44,7 +44,10 @@ describe("messageProblem", () => {
   it("reads the subject first, and lets a clean message through", () => {
     expect(messageProblem("wip", "")).toMatch(/^is not a conventional commit/);
     expect(
-      messageProblem("fix(prompt): the select keeps its choice keeps its height", "Said in the comment itself.")
+      messageProblem(
+        "fix(prompt): the select keeps its choice keeps its height",
+        "Said in the comment itself."
+      )
     ).toBe(undefined);
   });
 });
