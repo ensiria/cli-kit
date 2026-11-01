@@ -3,7 +3,7 @@
  * `docs/scripts.md` (and man pages for the installed ones).
  *
  * @remarks
- * Scripts are listed explicitly so the docs never pick up experiments (D-1). Each listed script is
+ * Scripts are listed explicitly so the docs never pick up experiments. Each listed script is
  * run with `CLI_KIT_DESCRIBE=1`, which makes `defineScript` print the script's JSON description and exit without
  * running its work, so nothing is imported and no side effect happens.
  *

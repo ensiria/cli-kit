@@ -13,6 +13,7 @@ People contributing read `CONTRIBUTING.md`; this file is the same rules, written
 - `examples/`: small commands built on the kit, each with its logic tested apart; `examples/gallery.ts` draws every
   helper.
 - `tools/check-commits/`: the repository's own check of commit messages.
+- `tools/check-internal-refs/`: the check that no tracked file points at notes outside this repository.
 
 ## Before you say a change is done
 
@@ -35,6 +36,10 @@ case, with the reason.
 - TSDoc on every module (a block first: what it does, `@remarks` for the why, `@module`) and on everything exported:
   what it is, its defaults and units, an `@example` where the use is not obvious.
 - Comments explain why the code is as it is, never its history: no dates, no names, no account of what was tried.
+- No reference to notes outside this repository, in a file or a commit message: no decision ids (a `D` and a
+  number), no numbered notes (`note` and a number), no private repository. A reader of this public repository cannot
+  open them, so the comment or the message says the reason itself. `pnpm refs:check` (part of `pnpm checks`) and
+  `check-commits` fail on them.
 - Output goes through the kit's own helpers: stdout carries results only (`--json` for data); headers, logs, live
   output and prompts go to stderr. Tones, glyphs and exit codes come from `src/constants.ts`.
 - Tests come with the change, on `createTestIo()` (a fake terminal, files and programs) instead of the real ones; a

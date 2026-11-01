@@ -4,10 +4,13 @@
  *
  * @remarks
  * The merge commits git and GitHub write (`Merge branch …`, `Merge pull request …`) are let through: they carry the
- * commits they bring, which are checked themselves. Pure.
+ * commits they bring, which are checked themselves. The whole message, subject and body, may not point at notes outside
+ * this repository (`check-internal-refs`), which a reader of its history cannot open. Pure.
  *
  * @module
  */
+
+import { internalReferences } from "../check-internal-refs/internalRefs.ts";
 
 /** The commit types the repository uses; `feat` and `fix` make a release, the others go into the changelog only. */
 export const COMMIT_TYPES = [
@@ -45,4 +48,19 @@ export const subjectProblem = (subject: string): string | undefined => {
   }
   if (subject.length > MAX_SUBJECT_LENGTH) return `is longer than ${MAX_SUBJECT_LENGTH} characters`;
   return undefined;
+};
+
+/**
+ * Why a commit's message cannot reach the repository, or nothing when it can: its subject first, then a reference to a
+ * note outside this repository anywhere in the message.
+ *
+ * @param subject - The commit's first line.
+ * @param body - The rest of its message.
+ */
+export const messageProblem = (subject: string, body: string): string | undefined => {
+  const subjectIssue = subjectProblem(subject);
+  if (subjectIssue !== undefined) return subjectIssue;
+  const found = internalReferences(`${subject}\n${body}`);
+  if (found.length === 0) return undefined;
+  return `mentions a note outside this repository: ${found.map((each) => `${each.kind} "${each.text}"`).join(", ")}`;
 };
