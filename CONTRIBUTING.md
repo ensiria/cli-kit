@@ -65,7 +65,10 @@ node examples/gallery.ts                     # every helper, drawn
 | `feat!` / `fix!`, or a `BREAKING CHANGE:` footer | a change that breaks existing code | major (minor while 0.x) |
 | `perf`, `refactor`, `docs`, `test`, `style`, `build`, `ci`, `chore`, `revert` | everything else | none |
 
-`node tools/check-commits/check-commits.mts --from origin/develop` checks a branch's commits; the CI checks them too.
+The message, body included, explains the change on its own: no decision ids, numbered notes or other repositories a
+reader of this history cannot open. `node tools/check-commits/check-commits.mts --from origin/develop` checks a
+branch's commits, their type and these references; the CI checks them too. `pnpm refs:check`, part of `pnpm checks`,
+checks the files for the same references.
 
 ## Releases
 
