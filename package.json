@@ -67,18 +67,18 @@
     "checks": "pnpm typecheck && pnpm lint && pnpm refs:check && pnpm test && pnpm build"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.6.2",
-    "@nx/js": "24.0.3",
-    "@types/node": "24.19.2",
-    "@typescript-eslint/parser": "8.72.0",
+    "@biomejs/biome": "2.6.4",
+    "@nx/js": "24.0.4",
+    "@types/node": "26.6.6",
+    "@typescript-eslint/parser": "8.72.1",
     "@typescript/native": "npm:typescript@7.0.2",
-    "eslint": "9.39.5",
-    "eslint-plugin-jsdoc": "65.4.2",
+    "eslint": "10.14.0",
+    "eslint-plugin-jsdoc": "65.4.3",
     "eslint-plugin-tsdoc": "0.5.4",
     "jiti": "2.7.0",
-    "nx": "24.0.3",
+    "nx": "24.0.4",
     "typescript": "npm:@typescript/typescript6@6.0.2",
-    "vitest": "5.0.5",
+    "vitest": "5.1.0",
     "zod": "4.6.7"
   },
   "nx": {
